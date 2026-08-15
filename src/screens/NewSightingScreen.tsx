@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import LocationPickerModal from '../components/LocationPickerModal';
 import StatusBadge from '../components/StatusBadge';
 import { classificarImagem, criarPostagem } from '../services/api';
 import { colors } from '../theme/colors';
@@ -29,6 +30,8 @@ export default function NewSightingScreen() {
   const [especieSelecionadaId, setEspecieSelecionadaId] = useState<number | null>(null);
   const [legenda, setLegenda] = useState('');
   const [publicando, setPublicando] = useState(false);
+  const [seletorLocalizacaoVisivel, setSeletorLocalizacaoVisivel] = useState(false);
+  const [fotoDaGaleriaPendente, setFotoDaGaleriaPendente] = useState<string | null>(null);
 
   const resetar = () => {
     setFotoUri(null);
@@ -39,28 +42,34 @@ export default function NewSightingScreen() {
     setLegenda('');
   };
 
-  const processarFoto = async (uri: string) => {
+  const processarFoto = async (uri: string, coordenadasIniciais?: { latitude: number; longitude: number }) => {
     setFotoUri(uri);
     setEtapa('classificando');
     setPredicoes([]);
     setEspecieSelecionadaId(null);
-
-    // RF002 / RF016: captura automática de coordenadas no momento do avistamento.
-    const permissaoLocalizacao = await Location.requestForegroundPermissionsAsync();
-    if (permissaoLocalizacao.status === 'granted') {
-      try {
-        const posicao = await Location.getCurrentPositionAsync({});
-        setCoordenadas({ latitude: posicao.coords.latitude, longitude: posicao.coords.longitude });
-      } catch {
-        // Cenário 4.4 (HU04): localização inválida/indisponível — segue sem coordenadas.
-      }
-    }
+    setCoordenadas(coordenadasIniciais ?? null);
 
     // RF001 / RF018: reconhecimento de espécie via ML (DJL + TensorFlow no backend).
     const resultado = await classificarImagem(uri);
     setPredicoes(resultado);
     if (resultado.length > 0) setEspecieSelecionadaId(resultado[0].especie.id);
     setEtapa('concluida');
+  };
+
+  const tirarFotoComGpsAtual = async (uri: string) => {
+    // RF002 / RF016: captura automática de coordenadas no momento do avistamento
+    // (faz sentido só pra foto tirada agora, na hora — não pra galeria).
+    let coordenadasIniciais: { latitude: number; longitude: number } | undefined;
+    const permissaoLocalizacao = await Location.requestForegroundPermissionsAsync();
+    if (permissaoLocalizacao.status === 'granted') {
+      try {
+        const posicao = await Location.getCurrentPositionAsync({});
+        coordenadasIniciais = { latitude: posicao.coords.latitude, longitude: posicao.coords.longitude };
+      } catch {
+        // Cenário 4.4 (HU04): localização inválida/indisponível — segue sem coordenadas.
+      }
+    }
+    await processarFoto(uri, coordenadasIniciais);
   };
 
   const escolherDaGaleria = async () => {
@@ -74,7 +83,26 @@ export default function NewSightingScreen() {
       quality: 0.7,
     });
     if (!resultado.canceled && resultado.assets[0]) {
-      await processarFoto(resultado.assets[0].uri);
+      // Foto da galeria pode ter sido tirada em outro lugar/hora — pede pra
+      // confirmar/ajustar a localização manualmente em vez de assumir o GPS atual.
+      setFotoDaGaleriaPendente(resultado.assets[0].uri);
+      setSeletorLocalizacaoVisivel(true);
+    }
+  };
+
+  const confirmarLocalizacaoDaGaleria = async (coordenadasEscolhidas: { latitude: number; longitude: number }) => {
+    setSeletorLocalizacaoVisivel(false);
+    if (fotoDaGaleriaPendente) {
+      await processarFoto(fotoDaGaleriaPendente, coordenadasEscolhidas);
+      setFotoDaGaleriaPendente(null);
+    }
+  };
+
+  const pularLocalizacaoDaGaleria = async () => {
+    setSeletorLocalizacaoVisivel(false);
+    if (fotoDaGaleriaPendente) {
+      await processarFoto(fotoDaGaleriaPendente);
+      setFotoDaGaleriaPendente(null);
     }
   };
 
@@ -86,7 +114,7 @@ export default function NewSightingScreen() {
     }
     const resultado = await ImagePicker.launchCameraAsync({ quality: 0.7 });
     if (!resultado.canceled && resultado.assets[0]) {
-      await processarFoto(resultado.assets[0].uri);
+      await tirarFotoComGpsAtual(resultado.assets[0].uri);
     }
   };
 
@@ -199,6 +227,12 @@ export default function NewSightingScreen() {
         )}
       </TouchableOpacity>
     </ScrollView>
+
+    <LocationPickerModal
+      visible={seletorLocalizacaoVisivel}
+      onConfirmar={confirmarLocalizacaoDaGaleria}
+      onPular={pularLocalizacaoDaGaleria}
+    />
     </SafeAreaView>
   );
 }

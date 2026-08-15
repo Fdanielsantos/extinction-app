@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,23 +13,26 @@ export default function ProfileScreen() {
   const [ranking, setRanking] = useState<RankingUsuario[]>([]);
   const [estatisticas, setEstatisticas] = useState({ avistamentos: 0, especiesCatalogadas: 0 });
 
-  useEffect(() => {
-    fetchRanking().then(setRanking);
-  }, []);
+  // Recarrega toda vez que a aba Perfil ganha foco (ex.: voltando de "Novo
+  // avistamento" depois de publicar), não só na primeira montagem — mesmo
+  // padrão já usado em FeedScreen/MapScreen pra manter os dados em dia.
+  useFocusEffect(
+    useCallback(() => {
+      fetchRanking().then(setRanking);
 
-  useEffect(() => {
-    if (!usuario) return;
-    fetchFeed().then((postagens) => {
-      const doUsuario = postagens.filter((p) => p.idPerfil === usuario.id);
-      const especiesDistintas = new Set(
-        doUsuario.flatMap((p) => p.especies.map((e) => e.id)),
-      );
-      setEstatisticas({
-        avistamentos: doUsuario.length,
-        especiesCatalogadas: especiesDistintas.size,
+      if (!usuario) return;
+      fetchFeed().then((postagens) => {
+        const doUsuario = postagens.filter((p) => p.idPerfil === usuario.id);
+        const especiesDistintas = new Set(
+          doUsuario.flatMap((p) => p.especies.map((e) => e.id)),
+        );
+        setEstatisticas({
+          avistamentos: doUsuario.length,
+          especiesCatalogadas: especiesDistintas.size,
+        });
       });
-    });
-  }, [usuario]);
+    }, [usuario]),
+  );
 
   if (!usuario) return null;
 

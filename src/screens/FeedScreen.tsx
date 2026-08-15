@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import PostCard from '../components/PostCard';
@@ -12,6 +12,7 @@ export default function FeedScreen() {
   const [postagens, setPostagens] = useState<Postagem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
+  const [busca, setBusca] = useState('');
   const primeiraCarga = useRef(true);
 
   const carregar = useCallback(async () => {
@@ -60,6 +61,21 @@ export default function FeedScreen() {
     );
   };
 
+  // RF013: filtro do feed por espécie (nome popular/científico) ou por usuário.
+  const postagensFiltradas = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return postagens;
+    return postagens.filter(
+      (p) =>
+        p.autorNome.toLowerCase().includes(termo) ||
+        p.especies.some(
+          (e) =>
+            e.nomePopular.toLowerCase().includes(termo) ||
+            e.nomeCientifico.toLowerCase().includes(termo),
+        ),
+    );
+  }, [postagens, busca]);
+
   if (carregando) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -74,7 +90,7 @@ export default function FeedScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <FlatList
         style={styles.lista}
-        data={postagens}
+        data={postagensFiltradas}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <PostCard postagem={item} onCurtir={handleCurtir} onComentar={handleComentar} />
@@ -85,11 +101,21 @@ export default function FeedScreen() {
           <View style={styles.cabecalho}>
             <Text style={styles.titulo}>Feed de avistamentos</Text>
             <Text style={styles.subtitulo}>Descobertas recentes da comunidade</Text>
+            <TextInput
+              style={styles.busca}
+              placeholder="Buscar por espécie ou usuário..."
+              value={busca}
+              onChangeText={setBusca}
+            />
           </View>
         }
         ListEmptyComponent={
           <View style={styles.vazio}>
-            <Text style={styles.vazioTexto}>Nenhum avistamento por aqui ainda.</Text>
+            <Text style={styles.vazioTexto}>
+              {busca.trim()
+                ? `Nenhum resultado para "${busca}".`
+                : 'Nenhum avistamento por aqui ainda.'}
+            </Text>
           </View>
         }
       />
@@ -119,6 +145,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginBottom: 8,
+  },
+  busca: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   vazio: {
     flex: 1,

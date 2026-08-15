@@ -1,12 +1,15 @@
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import StatusBadge from '../components/StatusBadge';
 import { fetchFeed } from '../services/api';
-import { colors, statusLabels } from '../theme/colors';
+import { colors } from '../theme/colors';
+import { REGIAO_INICIAL_BRASIL } from '../theme/mapStyle';
 import { Postagem, StatusEspecieAtual } from '../types';
+import { construirHtmlMapaFeed } from '../utils/leafletMapHtml';
 
 // RF008 / HU05: filtro de mapa por espécie/nível de risco + busca por nome científico.
 const FILTROS: { label: string; status: StatusEspecieAtual | 'TODAS' }[] = [
@@ -16,17 +19,15 @@ const FILTROS: { label: string; status: StatusEspecieAtual | 'TODAS' }[] = [
   { label: 'Criticamente em perigo', status: 'CRIATICAMENTE_EM_PERIGO' },
 ];
 
-const REGIAO_INICIAL = {
-  latitude: -15.7801,
-  longitude: -47.9292,
-  latitudeDelta: 20,
-  longitudeDelta: 20,
-};
+const HTML_MAPA = construirHtmlMapaFeed(REGIAO_INICIAL_BRASIL);
 
 export default function MapScreen() {
   const [postagens, setPostagens] = useState<Postagem[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<StatusEspecieAtual | 'TODAS'>('TODAS');
   const [busca, setBusca] = useState('');
+  const [postagemSelecionada, setPostagemSelecionada] = useState<Postagem | null>(null);
+  const [mapaPronto, setMapaPronto] = useState(false);
+  const webviewRef = useRef<WebView>(null);
 
   // Recarrega toda vez que a aba ganha foco, pra mostrar avistamentos recém-publicados.
   useFocusEffect(
@@ -53,6 +54,31 @@ export default function MapScreen() {
     });
   }, [postagens, filtroStatus, busca]);
 
+  // Repassa os marcadores pro mapa (dentro da WebView) toda vez que a lista
+  // filtrada muda — só depois que a página HTML sinalizou que carregou.
+  useEffect(() => {
+    if (!mapaPronto) return;
+    const dados = marcadores.map((postagem) => ({
+      id: postagem.id,
+      latitude: postagem.localidade!.latitude,
+      longitude: postagem.localidade!.longitude,
+      cor: colors.statusColors[postagem.especies[0]?.statusEspecieAtual] ?? colors.primary,
+    }));
+    webviewRef.current?.injectJavaScript(
+      `window.definirMarcadores(${JSON.stringify(dados)}); true;`,
+    );
+  }, [marcadores, mapaPronto]);
+
+  const handleMensagem = (evento: WebViewMessageEvent) => {
+    const mensagem = JSON.parse(evento.nativeEvent.data);
+    if (mensagem.tipo === 'pronto') {
+      setMapaPronto(true);
+    } else if (mensagem.tipo === 'marcador') {
+      const postagem = marcadores.find((p) => p.id === mensagem.id);
+      if (postagem) setPostagemSelecionada(postagem);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.filtros}>
@@ -78,24 +104,26 @@ export default function MapScreen() {
         </ScrollView>
       </View>
 
-      <MapView style={styles.mapa} initialRegion={REGIAO_INICIAL}>
-        {/*
-          Tiles do OpenStreetMap (decisão já tomada em HU05), em vez do provider padrão
-          Google/Apple Maps — evita depender de chave de API paga.
-        */}
-        <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} />
-        {marcadores.map((postagem) => (
-          <Marker
-            key={postagem.id}
-            coordinate={{
-              latitude: postagem.localidade!.latitude,
-              longitude: postagem.localidade!.longitude,
-            }}
-            title={postagem.especies.map((e) => e.nomePopular).join(', ')}
-            description={`${statusLabels[postagem.especies[0]?.statusEspecieAtual] ?? ''} · por ${postagem.autorNome}`}
-          />
-        ))}
-      </MapView>
+      <WebView
+        ref={webviewRef}
+        style={styles.mapa}
+        originWhitelist={['*']}
+        source={{ html: HTML_MAPA }}
+        onMessage={handleMensagem}
+      />
+
+      {postagemSelecionada && (
+        <View style={styles.cartaoInfo}>
+          <TouchableOpacity style={styles.fechar} onPress={() => setPostagemSelecionada(null)}>
+            <Text style={styles.fecharTexto}>✕</Text>
+          </TouchableOpacity>
+          <Text style={styles.cartaoTitulo}>
+            {postagemSelecionada.especies.map((e) => e.nomePopular).join(', ')}
+          </Text>
+          <Text style={styles.cartaoAutor}>por {postagemSelecionada.autorNome}</Text>
+          {postagemSelecionada.especies[0] && <StatusBadge status={postagemSelecionada.especies[0].statusEspecieAtual} />}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -148,5 +176,42 @@ const styles = StyleSheet.create({
   },
   mapa: {
     flex: 1,
+  },
+  cartaoInfo: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  fechar: {
+    position: 'absolute',
+    top: 8,
+    right: 10,
+    padding: 4,
+  },
+  fecharTexto: {
+    color: colors.textMuted,
+    fontSize: 16,
+  },
+  cartaoTitulo: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    paddingRight: 24,
+  },
+  cartaoAutor: {
+    fontSize: 12,
+    color: colors.textMuted,
   },
 });

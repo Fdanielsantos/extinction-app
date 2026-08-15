@@ -31,6 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -39,3 +40,13 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# backend (Java/Maven)
+backend/target/
+backend/.mvn/
+backend/*.iml
+backend/uploads/
+*.class
+.idea/
+*.iml
+HELP.md

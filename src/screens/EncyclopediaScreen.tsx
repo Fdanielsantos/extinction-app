@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import StatusBadge from '../components/StatusBadge';
-import { fetchEspecies } from '../services/mockApi';
+import { fetchEspecies } from '../services/api';
 import { colors } from '../theme/colors';
 import { Especie } from '../types';
 
@@ -27,7 +28,7 @@ export default function EncyclopediaScreen() {
   }, [especies, busca]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.cabecalho}>
         <Text style={styles.titulo}>Enciclopédia</Text>
         <TextInput
@@ -73,7 +74,7 @@ export default function EncyclopediaScreen() {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

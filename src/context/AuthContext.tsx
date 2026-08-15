@@ -7,10 +7,11 @@ import React, {
   useState,
 } from 'react';
 
-import { mockLogin, mockRegister } from '../services/mockApi';
+import { login as apiLogin, register as apiRegister, setAuthToken } from '../services/api';
 import { Usuario } from '../types';
 
 const STORAGE_KEY = '@extinction/usuario';
+const TOKEN_STORAGE_KEY = '@extinction/token';
 
 interface AuthContextValue {
   usuario: Usuario | null;
@@ -27,19 +28,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (raw) setUsuario(JSON.parse(raw));
+    Promise.all([AsyncStorage.getItem(STORAGE_KEY), AsyncStorage.getItem(TOKEN_STORAGE_KEY)])
+      .then(([rawUsuario, token]) => {
+        if (rawUsuario && token) {
+          setAuthToken(token);
+          setUsuario(JSON.parse(rawUsuario));
+        }
       })
       .finally(() => setCarregando(false));
   }, []);
 
-  const persistir = async (novoUsuario: Usuario | null) => {
+  const persistir = async (novoUsuario: Usuario | null, token: string | null) => {
     setUsuario(novoUsuario);
-    if (novoUsuario) {
+    setAuthToken(token);
+    if (novoUsuario && token) {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novoUsuario));
+      await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
     } else {
       await AsyncStorage.removeItem(STORAGE_KEY);
+      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
     }
   };
 
@@ -48,15 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       usuario,
       carregando,
       login: async (email, senha) => {
-        const logado = await mockLogin(email, senha);
-        await persistir(logado);
+        const { usuario: logado, token } = await apiLogin(email, senha);
+        await persistir(logado, token);
       },
       registrar: async (nome, email, senha) => {
-        const criado = await mockRegister(nome, email, senha);
-        await persistir(criado);
+        const { usuario: criado, token } = await apiRegister(nome, email, senha);
+        await persistir(criado, token);
       },
       logout: async () => {
-        await persistir(null);
+        await persistir(null, null);
       },
     }),
     [usuario, carregando],

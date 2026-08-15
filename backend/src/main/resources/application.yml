@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: extinction-api
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/extinction?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USER:extinction}
+    password: ${DB_PASSWORD:extinction}
+
+  jpa:
+    hibernate:
+      # Fase de scaffold, sem schema estável ainda. Trocar por Flyway quando o domínio for modelado.
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  upload-dir: ${UPLOAD_DIR:uploads}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+jwt:
+  secret: ${JWT_SECRET:dev-only-secret-change-me-dev-only-secret-change-me}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

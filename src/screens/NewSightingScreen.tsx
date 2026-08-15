@@ -12,9 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import StatusBadge from '../components/StatusBadge';
-import { classificarImagemMock, criarPostagem } from '../services/mockApi';
+import { classificarImagem, criarPostagem } from '../services/api';
 import { colors } from '../theme/colors';
 import { PredicaoEspecie } from '../types';
 
@@ -55,8 +56,8 @@ export default function NewSightingScreen() {
       }
     }
 
-    // RF001 / RF018: reconhecimento de espécie via ML (mock — substituir pela API real depois).
-    const resultado = await classificarImagemMock(uri);
+    // RF001 / RF018: reconhecimento de espécie via ML (DJL + TensorFlow no backend).
+    const resultado = await classificarImagem(uri);
     setPredicoes(resultado);
     if (resultado.length > 0) setEspecieSelecionadaId(resultado[0].especie.id);
     setEtapa('concluida');
@@ -118,7 +119,8 @@ export default function NewSightingScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScrollView contentContainerStyle={{ padding: 16 }}>
       <Text style={styles.titulo}>Novo avistamento</Text>
 
       {fotoUri ? (
@@ -155,7 +157,7 @@ export default function NewSightingScreen() {
         <View style={styles.predicoes}>
           <Text style={styles.secaoTitulo}>Qual espécie é essa?</Text>
           <Text style={styles.secaoSubtitulo}>
-            Resultado do reconhecimento automático (mock — RF018 chamará o backend real).
+            Resultado do reconhecimento automático de espécie.
           </Text>
           {predicoes.map(({ especie, confiancaPercentual }) => {
             const selecionada = especie.id === especieSelecionadaId;
@@ -197,6 +199,7 @@ export default function NewSightingScreen() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

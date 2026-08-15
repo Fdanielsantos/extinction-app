@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import PostCard from '../components/PostCard';
-import { fetchFeed, toggleCurtida } from '../services/mockApi';
+import { adicionarComentario, fetchFeed, toggleCurtida } from '../services/api';
 import { colors } from '../theme/colors';
 import { Postagem } from '../types';
 
@@ -10,15 +12,27 @@ export default function FeedScreen() {
   const [postagens, setPostagens] = useState<Postagem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
+  const primeiraCarga = useRef(true);
 
   const carregar = useCallback(async () => {
     const dados = await fetchFeed();
     setPostagens(dados);
   }, []);
 
-  useEffect(() => {
-    carregar().finally(() => setCarregando(false));
-  }, [carregar]);
+  // Recarrega toda vez que a aba ganha foco (ex.: voltando de "Novo avistamento"
+  // depois de publicar), não só na primeira montagem.
+  useFocusEffect(
+    useCallback(() => {
+      if (primeiraCarga.current) {
+        carregar().finally(() => {
+          setCarregando(false);
+          primeiraCarga.current = false;
+        });
+      } else {
+        carregar();
+      }
+    }, [carregar]),
+  );
 
   const handleAtualizar = async () => {
     setAtualizando(true);
@@ -27,7 +41,7 @@ export default function FeedScreen() {
   };
 
   const handleCurtir = async (id: number) => {
-    // Atualização otimista, revertida depois pela chamada mockada (RF005 / HU06).
+    // Atualização otimista, revertida depois pela chamada real (RF005 / HU06).
     setPostagens((atual) =>
       atual.map((p) =>
         p.id === id
@@ -39,38 +53,55 @@ export default function FeedScreen() {
     setPostagens((atual) => atual.map((p) => (p.id === id ? atualizada : p)));
   };
 
+  const handleComentar = async (id: number, descricao: string) => {
+    const comentario = await adicionarComentario(id, descricao);
+    setPostagens((atual) =>
+      atual.map((p) => (p.id === id ? { ...p, comentarios: [...p.comentarios, comentario] } : p)),
+    );
+  };
+
   if (carregando) {
     return (
-      <View style={styles.vazio}>
-        <Text style={styles.vazioTexto}>Carregando feed...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.vazio}>
+          <Text style={styles.vazioTexto}>Carregando feed...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <FlatList
-      style={styles.lista}
-      data={postagens}
-      keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <PostCard postagem={item} onCurtir={handleCurtir} />}
-      contentContainerStyle={{ paddingVertical: 12 }}
-      refreshControl={<RefreshControl refreshing={atualizando} onRefresh={handleAtualizar} />}
-      ListHeaderComponent={
-        <View style={styles.cabecalho}>
-          <Text style={styles.titulo}>Feed de avistamentos</Text>
-          <Text style={styles.subtitulo}>Descobertas recentes da comunidade</Text>
-        </View>
-      }
-      ListEmptyComponent={
-        <View style={styles.vazio}>
-          <Text style={styles.vazioTexto}>Nenhum avistamento por aqui ainda.</Text>
-        </View>
-      }
-    />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <FlatList
+        style={styles.lista}
+        data={postagens}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => (
+          <PostCard postagem={item} onCurtir={handleCurtir} onComentar={handleComentar} />
+        )}
+        contentContainerStyle={{ paddingVertical: 12 }}
+        refreshControl={<RefreshControl refreshing={atualizando} onRefresh={handleAtualizar} />}
+        ListHeaderComponent={
+          <View style={styles.cabecalho}>
+            <Text style={styles.titulo}>Feed de avistamentos</Text>
+            <Text style={styles.subtitulo}>Descobertas recentes da comunidade</Text>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.vazio}>
+            <Text style={styles.vazioTexto}>Nenhum avistamento por aqui ainda.</Text>
+          </View>
+        }
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   lista: {
     flex: 1,
     backgroundColor: colors.background,

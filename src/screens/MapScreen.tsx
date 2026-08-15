@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, UrlTile } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { fetchFeed } from '../services/mockApi';
+import { fetchFeed } from '../services/api';
 import { colors, statusLabels } from '../theme/colors';
 import { Postagem, StatusEspecieAtual } from '../types';
 
@@ -26,9 +28,12 @@ export default function MapScreen() {
   const [filtroStatus, setFiltroStatus] = useState<StatusEspecieAtual | 'TODAS'>('TODAS');
   const [busca, setBusca] = useState('');
 
-  useEffect(() => {
-    fetchFeed().then(setPostagens);
-  }, []);
+  // Recarrega toda vez que a aba ganha foco, pra mostrar avistamentos recém-publicados.
+  useFocusEffect(
+    useCallback(() => {
+      fetchFeed().then(setPostagens);
+    }, []),
+  );
 
   const marcadores = useMemo(() => {
     return postagens.filter((postagem) => {
@@ -49,7 +54,7 @@ export default function MapScreen() {
   }, [postagens, filtroStatus, busca]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.filtros}>
         <TextInput
           style={styles.busca}
@@ -91,7 +96,7 @@ export default function MapScreen() {
           />
         ))}
       </MapView>
-    </View>
+    </SafeAreaView>
   );
 }
 

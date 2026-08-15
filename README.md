@@ -1,20 +1,45 @@
-# Extinction App — Esqueleto Mobile (React Native / Expo)
+# Extinction App (React Native / Expo) + extinction-api (Spring Boot)
 
-Esqueleto funcional do cliente mobile do projeto **Extinction**, construído em **React Native + Expo + TypeScript**, conforme a recomendação de tecnologias da equipe (ver `../Recomendacao-Tecnologias-Extinction.md`).
+Projeto acadêmico **Extinction** — plataforma de ciência cidadã para conservação da
+biodiversidade brasileira. Cliente mobile em **React Native + Expo + TypeScript**, backend em
+**Java 17 + Spring Boot + MySQL** (pasta `backend/`, ver `backend/README.md`).
 
-O objetivo desta primeira leva é ter **navegação completa e telas funcionais rodando com dados mockados**, prontas para depois serem conectadas à API real (Java 17 + Spring Boot, já definida no Documento de Arquitetura de Software da equipe).
+**Status:** as duas pontas estão conectadas de verdade — o app não usa mais dados mockados
+(exceto recuperação de senha, por falta de infra de e-mail no backend). Ver
+`backend/README.md` pra detalhes de endpoints, domínio e do reconhecimento de imagem via
+TensorFlow.
 
-## Como rodar
+## Como rodar tudo
 
-Pré-requisitos: Node.js (LTS) instalado — já configurado nesta máquina. Em um terminal **novo** (aberto depois da instalação do Node):
+### 1. Backend (precisa do Docker Desktop aberto)
 
 ```bash
-cd extinction-app
-node -v        # confirma que o Node está disponível no PATH
+cd backend
+docker-compose up --build -d
+```
+
+Confere que subiu: `curl http://localhost:8080/actuator/health` deve responder
+`{"status":"UP"}`. Primeira subida é mais lenta (~30-55s, baixa a lib nativa do TensorFlow e um
+modelo — ver `backend/README.md`, seção de IA).
+
+### 2. Frontend (Expo)
+
+Em outro terminal, na raiz do projeto:
+
+```bash
 npx expo start
 ```
 
-Isso abre o Metro Bundler com um QR code. Escaneie com o app **Expo Go** (Android ou iOS, disponível na loja de apps) para rodar o app no celular — não é necessário emulador nem build nativo para esta fase.
+Escaneie o QR code com o app **Expo Go** (Android/iOS) — celular precisa estar na mesma rede
+Wi-Fi/LAN do computador. O app detecta sozinho o IP da API a partir do endereço que o próprio
+Metro Bundler está usando (`src/services/api.ts`), então não precisa configurar nada manual —
+a menos que queira forçar uma URL específica via variável de ambiente `EXPO_PUBLIC_API_URL`.
+
+### 3. Login
+
+Usuários de teste já cadastrados (senha `extinction123` pra todos — ver
+`backend/README.md`): `ana.biologa@extinction.dev`, `flavio.santos@extinction.dev`,
+`guilherme.alves@extinction.dev`.
 
 Outros comandos úteis:
 - `npx tsc --noEmit` — checagem de tipos (TypeScript em modo `strict`).
@@ -22,39 +47,46 @@ Outros comandos úteis:
 
 ## O que já está implementado
 
-Todas as telas usam **dados mockados** (`src/services/mockApi.ts`) que simulam a futura API REST do backend — cada função já tem a assinatura (parâmetros e retorno) que a chamada real deveria ter, então trocar o mock por `axios`/`fetch` depois não deve exigir mudanças nas telas.
-
 | Tela | Arquivo | Requisitos/HU cobertos |
 |---|---|---|
-| Login | `src/screens/auth/LoginScreen.tsx` | HU02 — validação de campos, mensagens de erro |
-| Cadastro | `src/screens/auth/RegisterScreen.tsx` | HU01 — regras de senha (8+ caracteres, letra+número), confirmação de senha |
-| Recuperar senha | `src/screens/auth/ForgotPasswordScreen.tsx` | HU03 |
-| Feed | `src/screens/FeedScreen.tsx` | RF005/RF013, HU06 — timeline, curtidas, pull-to-refresh |
-| Mapa | `src/screens/MapScreen.tsx` | RF008/RF016/RF017, HU05 — mapa com tiles OpenStreetMap, busca por nome de espécie, filtro por nível de risco |
-| Novo Avistamento | `src/screens/NewSightingScreen.tsx` | RF001/RF002/RF011/RF018, HU04 — foto (câmera/galeria), GPS automático, classificação de espécie (mock) |
-| Enciclopédia | `src/screens/EncyclopediaScreen.tsx` | RF014, HU07 — busca e detalhes de espécies |
-| Perfil | `src/screens/ProfileScreen.tsx` | RF007/RF010, HU08 — estatísticas, ranking (gamificação), logout |
+| Login | `src/screens/auth/LoginScreen.tsx` | HU02 — autenticação real via JWT |
+| Cadastro | `src/screens/auth/RegisterScreen.tsx` | HU01 — regras de senha, cadastro real |
+| Recuperar senha | `src/screens/auth/ForgotPasswordScreen.tsx` | HU03 — **ainda mockado** (sem infra de e-mail no backend) |
+| Feed | `src/screens/FeedScreen.tsx` | RF005/RF013, HU06 — timeline real, curtidas, comentários (expandir/adicionar), pull-to-refresh, recarrega ao focar a aba |
+| Mapa | `src/screens/MapScreen.tsx` | RF008/RF016/RF017, HU05 — mapa OpenStreetMap com avistamentos reais, busca, filtro por status, recarrega ao focar a aba |
+| Novo Avistamento | `src/screens/NewSightingScreen.tsx` | RF001/RF002/RF011/RF018, HU04 — foto (câmera/galeria), GPS automático, reconhecimento de espécie via DJL/TensorFlow real no backend, upload de foto |
+| Enciclopédia | `src/screens/EncyclopediaScreen.tsx` | RF014, HU07 — busca e detalhes de espécies (catálogo real) |
+| Perfil | `src/screens/ProfileScreen.tsx` | RF007/RF010, HU08 — estatísticas reais (avistamentos/espécies do usuário), ranking real, logout |
+
+Todas as telas respeitam a área segura do dispositivo (notch/status bar) via
+`react-native-safe-area-context`.
 
 ### Autenticação e navegação
 
-- `src/context/AuthContext.tsx`: guarda o usuário logado, expõe `login`, `registrar`, `logout`, e persiste a sessão localmente com `@react-native-async-storage/async-storage`.
-- `src/navigation/RootNavigator.tsx`: decide automaticamente qual navegador mostrar — `AuthNavigator` (pilha com Login/Cadastro/Recuperar senha) se não houver usuário logado, ou `MainNavigator` (abas: Feed, Mapa, Avistar, Espécies, Perfil) se houver.
+- `src/context/AuthContext.tsx`: guarda o usuário logado **e o token JWT**, persiste ambos com
+  `@react-native-async-storage/async-storage`, injeta o token nas chamadas via
+  `src/services/api.ts`.
+- `src/navigation/RootNavigator.tsx`: `AuthNavigator` (sem login) ou `MainNavigator` (com
+  login) — abas Feed, Mapa, Avistar, Espécies, Perfil.
 
 ### Estrutura de pastas
 
 ```
 extinction-app/
-├─ App.tsx                     # ponto de entrada: AuthProvider + RootNavigator
+├─ App.tsx                     # SafeAreaProvider + AuthProvider + RootNavigator
+├─ backend/                    # API Spring Boot (ver backend/README.md)
 └─ src/
-   ├─ types/index.ts           # modelos TS espelhando o diagrama de classes do backend
+   ├─ types/index.ts           # modelos TS espelhando os DTOs do backend
    ├─ theme/colors.ts          # paleta de cores e rótulos de status de extinção
-   ├─ services/mockApi.ts      # camada de dados mockada (trocar por API real depois)
-   ├─ context/AuthContext.tsx  # estado de sessão do usuário
+   ├─ services/
+   │  ├─ api.ts                # cliente HTTP real (JWT, multipart, base URL auto-detectada)
+   │  └─ mockApi.ts            # só recuperação de senha ainda (sem infra de e-mail no backend)
+   ├─ context/AuthContext.tsx  # sessão do usuário + token JWT
    ├─ components/
-   │  ├─ StatusBadge.tsx       # selo colorido de status de extinção (reutilizado em várias telas)
-   │  └─ PostCard.tsx          # card de postagem usado no Feed
+   │  ├─ StatusBadge.tsx       # selo colorido de status de extinção
+   │  └─ PostCard.tsx          # card de postagem: curtir, expandir/adicionar comentários
    ├─ navigation/
-   │  ├─ types.ts              # tipos das rotas (stacks/tabs)
+   │  ├─ types.ts
    │  ├─ AuthNavigator.tsx
    │  ├─ MainNavigator.tsx
    │  └─ RootNavigator.tsx
@@ -72,28 +104,31 @@ extinction-app/
 | Pacote | Uso |
 |---|---|
 | `@react-navigation/native`, `native-stack`, `bottom-tabs` | Navegação |
-| `react-native-screens`, `react-native-safe-area-context` | Requeridas pelo React Navigation |
+| `react-native-screens`, `react-native-safe-area-context` | Navegação + área segura (notch/status bar) |
 | `react-native-maps` | Mapa com tiles OpenStreetMap (`UrlTile`) |
 | `expo-location` | Captura de GPS no avistamento |
 | `expo-image-picker` | Câmera e galeria de fotos |
-| `@react-native-async-storage/async-storage` | Persistência local da sessão |
+| `expo-constants` | Detecta o IP da API a partir do endereço do Metro Bundler |
+| `@react-native-async-storage/async-storage` | Persistência local de sessão + token JWT |
 
-## O que é mock e precisa ser substituído depois
+## O que ainda é mock ou está fora de escopo
 
-Procure por comentários `TODO`/"mock" no código — os principais pontos de integração futura são:
+1. **Recuperação de senha** (`mockRequestPasswordReset` em `src/services/mockApi.ts`) — não há
+   infraestrutura de envio de e-mail no backend ainda.
+2. **Reconhecimento de espécie** funciona de verdade (DJL + TensorFlow no backend), mas hoje usa
+   um classificador genérico do ImageNet, não um modelo treinado nas espécies do catálogo — ver
+   `backend/README.md` pra detalhes e o que falta pra ter um modelo real.
 
-1. **`classificarImagemMock` em `mockApi.ts`** — hoje sorteia 3 espécies aleatórias com confiança fake. Deve virar uma chamada `POST` para o endpoint do backend que aciona a classe `TFmodel` (DJL + TensorFlow, conforme a arquitetura já definida).
-2. **`mockLogin` / `mockRegister` em `mockApi.ts`** — hoje aceitam qualquer credencial válida no formato. Devem virar chamadas para os endpoints de autenticação Spring Security + JWT, e o token JWT retornado deve passar a ser guardado no `AuthContext` (hoje ele guarda só os dados do usuário) e enviado no header `Authorization` das próximas chamadas.
-3. **`MOCK_ESPECIES` / `MOCK_POSTAGENS` em `mockApi.ts`** — hoje são arrays fixos em memória. Devem virar respostas de `GET /especies` e `GET /postagens` (feed paginado).
-
-## O que ainda não existe neste esqueleto
+## O que ainda não existe
 
 - Tela de edição/exclusão de postagem (RF012).
-- Tela de detalhe de espécie a partir de um marcador do mapa (RF entre HU05/HU07 — hoje o mapa só mostra callout nativo).
-- Fluxo de login social (Google/Apple), citado no Documento de Arquitetura mas não implementado aqui.
+- Tela de detalhe de espécie a partir de um marcador do mapa.
+- Login social (Google/Apple).
 - Notificações push (Firebase Cloud Messaging).
-- Ícones de verdade nas abas (hoje são emojis, só para não depender de mais uma biblioteca nesta fase).
+- Ícones de verdade nas abas (hoje são emojis).
 
 ## Contexto do projeto
 
-Este app é o cliente do projeto acadêmico **Extinction** (plataforma de ciência cidadã para conservação da biodiversidade brasileira). O backend (Java 17 + Spring Boot + MySQL) já está definido no Documento de Arquitetura de Software da equipe; este README documenta apenas a parte mobile, criada como esqueleto inicial para acelerar o desenvolvimento do semestre.
+Plataforma de ciência cidadã para conservação da biodiversidade brasileira. Documento de
+Arquitetura de Software e Documento de Visão da equipe descrevem o escopo completo; este
+README cobre o estado atual da implementação (frontend + backend).

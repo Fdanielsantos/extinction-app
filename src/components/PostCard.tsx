@@ -1,5 +1,13 @@
-import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { colors } from '../theme/colors';
 import { Postagem } from '../types';
@@ -17,9 +25,26 @@ function formatarDataRelativa(iso: string): string {
 interface Props {
   postagem: Postagem;
   onCurtir: (id: number) => void;
+  onComentar: (id: number, descricao: string) => Promise<void>;
 }
 
-export default function PostCard({ postagem, onCurtir }: Props) {
+export default function PostCard({ postagem, onCurtir, onComentar }: Props) {
+  const [comentariosVisiveis, setComentariosVisiveis] = useState(false);
+  const [novoComentario, setNovoComentario] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  const handleEnviarComentario = async () => {
+    const descricao = novoComentario.trim();
+    if (!descricao) return;
+    setEnviando(true);
+    try {
+      await onComentar(postagem.id, descricao);
+      setNovoComentario('');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.cabecalho}>
@@ -54,8 +79,48 @@ export default function PostCard({ postagem, onCurtir }: Props) {
             </Text>
             <Text style={styles.acaoTexto}>{postagem.curtidas}</Text>
           </TouchableOpacity>
-          <Text style={styles.acaoTexto}>{postagem.comentarios.length} comentário(s)</Text>
+          <TouchableOpacity onPress={() => setComentariosVisiveis((v) => !v)}>
+            <Text style={styles.acaoTexto}>
+              {postagem.comentarios.length} comentário(s) {comentariosVisiveis ? '▲' : '▼'}
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {comentariosVisiveis && (
+          <View style={styles.comentarios}>
+            {postagem.comentarios.length === 0 ? (
+              <Text style={styles.comentarioVazio}>Nenhum comentário ainda. Seja o primeiro!</Text>
+            ) : (
+              postagem.comentarios.map((comentario) => (
+                <View key={comentario.id} style={styles.comentarioItem}>
+                  <Text style={styles.comentarioAutor}>{comentario.autorNome}</Text>
+                  <Text style={styles.comentarioTexto}>{comentario.descricao}</Text>
+                </View>
+              ))
+            )}
+
+            <View style={styles.comentarioLinha}>
+              <TextInput
+                style={styles.comentarioInput}
+                placeholder="Escreva um comentário..."
+                value={novoComentario}
+                onChangeText={setNovoComentario}
+                editable={!enviando}
+              />
+              <TouchableOpacity
+                style={[styles.comentarioBotao, (enviando || !novoComentario.trim()) && styles.botaoDesabilitado]}
+                onPress={handleEnviarComentario}
+                disabled={enviando || !novoComentario.trim()}
+              >
+                {enviando ? (
+                  <ActivityIndicator color={colors.surface} size="small" />
+                ) : (
+                  <Text style={styles.comentarioBotaoTexto}>Enviar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -139,6 +204,59 @@ const styles = StyleSheet.create({
   },
   acaoTexto: {
     color: colors.textMuted,
+    fontSize: 13,
+  },
+  comentarios: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 10,
+  },
+  comentarioVazio: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  comentarioItem: {
+    marginBottom: 8,
+  },
+  comentarioAutor: {
+    fontWeight: '600',
+    color: colors.text,
+    fontSize: 13,
+  },
+  comentarioTexto: {
+    color: colors.text,
+    fontSize: 13,
+  },
+  comentarioLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  comentarioInput: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+  },
+  comentarioBotao: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  botaoDesabilitado: {
+    opacity: 0.5,
+  },
+  comentarioBotaoTexto: {
+    color: colors.surface,
+    fontWeight: '600',
     fontSize: 13,
   },
 });

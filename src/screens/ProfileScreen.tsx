@@ -1,23 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
-import { fetchRanking } from '../services/mockApi';
+import { fetchFeed, fetchRanking } from '../services/api';
 import { colors } from '../theme/colors';
 import { RankingUsuario } from '../types';
 
 export default function ProfileScreen() {
   const { usuario, logout } = useAuth();
   const [ranking, setRanking] = useState<RankingUsuario[]>([]);
+  const [estatisticas, setEstatisticas] = useState({ avistamentos: 0, especiesCatalogadas: 0 });
 
   useEffect(() => {
     fetchRanking().then(setRanking);
   }, []);
 
+  useEffect(() => {
+    if (!usuario) return;
+    fetchFeed().then((postagens) => {
+      const doUsuario = postagens.filter((p) => p.idPerfil === usuario.id);
+      const especiesDistintas = new Set(
+        doUsuario.flatMap((p) => p.especies.map((e) => e.id)),
+      );
+      setEstatisticas({
+        avistamentos: doUsuario.length,
+        especiesCatalogadas: especiesDistintas.size,
+      });
+    });
+  }, [usuario]);
+
   if (!usuario) return null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScrollView contentContainerStyle={{ padding: 16 }}>
       <View style={styles.cabecalho}>
         <View style={styles.avatar}>
           <Text style={styles.avatarTexto}>{usuario.nome.charAt(0)}</Text>
@@ -28,11 +45,11 @@ export default function ProfileScreen() {
 
       <View style={styles.estatisticas}>
         <View style={styles.estatisticaItem}>
-          <Text style={styles.estatisticaNumero}>21</Text>
+          <Text style={styles.estatisticaNumero}>{estatisticas.especiesCatalogadas}</Text>
           <Text style={styles.estatisticaLabel}>Espécies catalogadas</Text>
         </View>
         <View style={styles.estatisticaItem}>
-          <Text style={styles.estatisticaNumero}>7</Text>
+          <Text style={styles.estatisticaNumero}>{estatisticas.avistamentos}</Text>
           <Text style={styles.estatisticaLabel}>Avistamentos validados</Text>
         </View>
       </View>
@@ -50,6 +67,7 @@ export default function ProfileScreen() {
         <Text style={styles.botaoSairTexto}>Sair da conta</Text>
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

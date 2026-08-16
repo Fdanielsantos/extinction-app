@@ -51,7 +51,7 @@ public class PostagemService {
     @Transactional
     public PostagemResponse criar(
             Usuario usuarioLogado,
-            MultipartFile foto,
+            List<MultipartFile> fotos,
             String legenda,
             List<Long> especieIds,
             Double latitude,
@@ -61,12 +61,11 @@ public class PostagemService {
         if (especies.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Selecione ao menos uma espécie válida.");
         }
+        if (fotos == null || fotos.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Envie ao menos uma foto do avistamento.");
+        }
 
-        String nomeArquivo = fileStorageService.salvar(foto);
-        String fotoUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/uploads/")
-                .path(nomeArquivo)
-                .toUriString();
+        List<String> fotoUrls = fotos.stream().map(this::salvarESerializarUrl).toList();
 
         Localidade localidade = (latitude != null && longitude != null)
                 ? Localidade.builder().latitude(latitude).longitude(longitude).build()
@@ -74,7 +73,7 @@ public class PostagemService {
 
         Postagem postagem = Postagem.builder()
                 .usuario(usuarioLogado)
-                .fotoUrl(fotoUrl)
+                .fotoUrls(fotoUrls)
                 .legenda(legenda)
                 .data(Instant.now())
                 .localidade(localidade)
@@ -83,6 +82,14 @@ public class PostagemService {
 
         postagem = postagemRepository.save(postagem);
         return PostagemResponse.from(postagem, usuarioLogado);
+    }
+
+    private String salvarESerializarUrl(MultipartFile foto) {
+        String nomeArquivo = fileStorageService.salvar(foto);
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/uploads/")
+                .path(nomeArquivo)
+                .toUriString();
     }
 
     @Transactional

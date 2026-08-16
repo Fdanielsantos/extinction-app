@@ -50,23 +50,23 @@ public class DataSeeder implements CommandLineRunner {
             Especie micoLeaoDourado = especie(
                     "Leontopithecus rosalia", "Mico-leão-dourado",
                     "Pequeno primata de pelagem dourada, símbolo da conservação da Mata Atlântica.",
-                    "Mata Atlântica (RJ)", StatusEspecieAtual.EM_PERIGO);
+                    "Mata Atlântica (RJ)", "Mata Atlântica", StatusEspecieAtual.EM_PERIGO);
             Especie loboGuara = especie(
                     "Chrysocyon brachyurus", "Lobo-guará",
                     "Maior canídeo da América do Sul, típico do Cerrado brasileiro.",
-                    "Cerrado", StatusEspecieAtual.QUASE_AMEACADA);
+                    "Cerrado", "Cerrado", StatusEspecieAtual.QUASE_AMEACADA);
             Especie araucaria = especie(
                     "Araucaria angustifolia", "Araucária",
                     "Conífera nativa da Mata Atlântica, também chamada de pinheiro-do-paraná.",
-                    "Mata Atlântica (Sul)", StatusEspecieAtual.CRIATICAMENTE_EM_PERIGO);
+                    "Mata Atlântica (Sul)", "Mata Atlântica", StatusEspecieAtual.CRIATICAMENTE_EM_PERIGO);
             Especie oncaPintada = especie(
                     "Panthera onca", "Onça-pintada",
                     "Maior felino das Américas, topo da cadeia alimentar em vários biomas.",
-                    "Amazônia, Pantanal, Cerrado", StatusEspecieAtual.VULNERAVEL);
+                    "Amazônia, Pantanal, Cerrado", "Amazônia", StatusEspecieAtual.VULNERAVEL);
             Especie araraAzulDeLear = especie(
                     "Anodorhynchus leari", "Arara-azul-de-lear",
                     "Ave endêmica da Bahia, com população historicamente muito reduzida.",
-                    "Caatinga (BA)", StatusEspecieAtual.EM_PERIGO);
+                    "Caatinga (BA)", "Caatinga", StatusEspecieAtual.EM_PERIGO);
             especieRepository.saveAll(List.of(micoLeaoDourado, loboGuara, araucaria, oncaPintada, araraAzulDeLear));
         }
     }
@@ -83,7 +83,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private Especie especie(
-            String nomeCientifico, String nomePopular, String descricao, String habitat,
+            String nomeCientifico, String nomePopular, String descricao, String habitat, String regiao,
             StatusEspecieAtual status
     ) {
         return Especie.builder()
@@ -91,6 +91,7 @@ public class DataSeeder implements CommandLineRunner {
                 .nomePopular(nomePopular)
                 .descricao(descricao)
                 .habitat(habitat)
+                .regiao(regiao)
                 .statusEspecieAtual(status)
                 .build();
     }

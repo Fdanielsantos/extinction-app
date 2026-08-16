@@ -1,17 +1,23 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
-import { fetchFeed, fetchRanking } from '../services/api';
+import { MainStackParamList } from '../navigation/types';
+import { fetchFeed, fetchRanking, fetchUsuarioPublico } from '../services/api';
 import { colors } from '../theme/colors';
-import { RankingUsuario } from '../types';
+import { RankingUsuario, UsuarioPublico } from '../types';
+
+type Navegacao = NativeStackNavigationProp<MainStackParamList>;
 
 export default function ProfileScreen() {
   const { usuario, logout } = useAuth();
+  const navigation = useNavigation<Navegacao>();
   const [ranking, setRanking] = useState<RankingUsuario[]>([]);
   const [estatisticas, setEstatisticas] = useState({ avistamentos: 0, especiesCatalogadas: 0 });
+  const [meuPerfilPublico, setMeuPerfilPublico] = useState<UsuarioPublico | null>(null);
 
   // Recarrega toda vez que a aba Perfil ganha foco (ex.: voltando de "Novo
   // avistamento" depois de publicar), não só na primeira montagem — mesmo
@@ -21,6 +27,7 @@ export default function ProfileScreen() {
       fetchRanking().then(setRanking);
 
       if (!usuario) return;
+      fetchUsuarioPublico(usuario.id).then(setMeuPerfilPublico);
       fetchFeed().then((postagens) => {
         const doUsuario = postagens.filter((p) => p.idPerfil === usuario.id);
         const especiesDistintas = new Set(
@@ -40,11 +47,19 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
     <ScrollView contentContainerStyle={{ padding: 16 }}>
       <View style={styles.cabecalho}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarTexto}>{usuario.nome.charAt(0)}</Text>
-        </View>
+        {usuario.fotoUrl ? (
+          <Image source={{ uri: usuario.fotoUrl }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarVazio]}>
+            <Text style={styles.avatarTexto}>{usuario.nome.charAt(0)}</Text>
+          </View>
+        )}
         <Text style={styles.nome}>{usuario.nome}</Text>
         <Text style={styles.email}>{usuario.email}</Text>
+        {!!usuario.bio && <Text style={styles.bio}>{usuario.bio}</Text>}
+        <TouchableOpacity style={styles.botaoEditarPerfil} onPress={() => navigation.navigate('EditarPerfil')}>
+          <Text style={styles.botaoEditarPerfilTexto}>Editar perfil</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.estatisticas}>
@@ -57,6 +72,18 @@ export default function ProfileScreen() {
           <Text style={styles.estatisticaLabel}>Avistamentos validados</Text>
         </View>
       </View>
+
+      <TouchableOpacity style={styles.linkSeguidores} onPress={() => navigation.navigate('Seguidores')}>
+        <View>
+          <Text style={styles.linkSeguidoresTitulo}>Seguidores</Text>
+          <Text style={styles.linkSeguidoresTexto}>
+            {meuPerfilPublico
+              ? `${meuPerfilPublico.totalSeguidores} seguidor(es) · seguindo ${meuPerfilPublico.totalSeguindo}`
+              : 'Buscar e seguir outros usuários'}
+          </Text>
+        </View>
+        <Text style={styles.linkSeguidoresSeta}>›</Text>
+      </TouchableOpacity>
 
       <Text style={styles.secaoTitulo}>Ranking da comunidade</Text>
       {ranking.map((item, index) => (
@@ -88,10 +115,12 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
+    marginBottom: 10,
+  },
+  avatarVazio: {
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
   avatarTexto: {
     color: colors.surface,
@@ -106,6 +135,26 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 13,
     color: colors.textMuted,
+  },
+  bio: {
+    fontSize: 13,
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 16,
+  },
+  botaoEditarPerfil: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  botaoEditarPerfilTexto: {
+    color: colors.primary,
+    fontWeight: '600',
+    fontSize: 13,
   },
   estatisticas: {
     flexDirection: 'row',
@@ -130,6 +179,30 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
     textAlign: 'center',
+  },
+  linkSeguidores: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 24,
+  },
+  linkSeguidoresTitulo: {
+    fontWeight: '700',
+    color: colors.text,
+  },
+  linkSeguidoresTexto: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  linkSeguidoresSeta: {
+    fontSize: 22,
+    color: colors.textMuted,
   },
   secaoTitulo: {
     fontSize: 16,

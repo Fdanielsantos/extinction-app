@@ -38,6 +38,14 @@ public class Especie {
 
     private String habitat;
 
+    // Bioma/região usado pra agrupar a enciclopédia em estilo Pokédex regional
+    // (Amazônia, Mata Atlântica, Cerrado, Caatinga, Pantanal, Pampa) — distinto
+    // do texto livre de `habitat`, que pode citar mais de um bioma/estado.
+    // Nullable (não "nullable = false"): num banco já existente (ddl-auto:
+    // update), o ALTER TABLE que adiciona essa coluna precisa aceitar as
+    // linhas antigas sem valor — o frontend cai num rótulo padrão nesse caso.
+    private String regiao;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status_especie_atual", nullable = false)
     private StatusEspecieAtual statusEspecieAtual;

@@ -22,8 +22,10 @@ import { PredicaoEspecie } from '../types';
 
 type EtapaClassificacao = 'ociosa' | 'classificando' | 'concluida';
 
+const LIMITE_FOTOS = 6;
+
 export default function NewSightingScreen() {
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<string[]>([]);
   const [coordenadas, setCoordenadas] = useState<{ latitude: number; longitude: number } | null>(null);
   const [etapa, setEtapa] = useState<EtapaClassificacao>('ociosa');
   const [predicoes, setPredicoes] = useState<PredicaoEspecie[]>([]);
@@ -31,10 +33,10 @@ export default function NewSightingScreen() {
   const [legenda, setLegenda] = useState('');
   const [publicando, setPublicando] = useState(false);
   const [seletorLocalizacaoVisivel, setSeletorLocalizacaoVisivel] = useState(false);
-  const [fotoDaGaleriaPendente, setFotoDaGaleriaPendente] = useState<string | null>(null);
+  const [fotosDaGaleriaPendentes, setFotosDaGaleriaPendentes] = useState<string[]>([]);
 
   const resetar = () => {
-    setFotoUri(null);
+    setFotos([]);
     setCoordenadas(null);
     setEtapa('ociosa');
     setPredicoes([]);
@@ -42,86 +44,111 @@ export default function NewSightingScreen() {
     setLegenda('');
   };
 
-  const processarFoto = async (uri: string, coordenadasIniciais?: { latitude: number; longitude: number }) => {
-    setFotoUri(uri);
-    setEtapa('classificando');
-    setPredicoes([]);
-    setEspecieSelecionadaId(null);
-    setCoordenadas(coordenadasIniciais ?? null);
+  // A classificação automática (RF001/RF018) roda uma única vez, sobre a
+  // primeira foto adicionada — fotos extras (tiradas depois ou escolhidas
+  // junto) só entram na publicação, sem disparar nova inferência.
+  const adicionarFotos = async (novasUris: string[]) => {
+    const primeiraLeva = fotos.length === 0 && novasUris.length > 0;
+    setFotos((atual) => [...atual, ...novasUris].slice(0, LIMITE_FOTOS));
 
-    // RF001 / RF018: reconhecimento de espécie via ML (DJL + TensorFlow no backend).
-    const resultado = await classificarImagem(uri);
-    setPredicoes(resultado);
-    if (resultado.length > 0) setEspecieSelecionadaId(resultado[0].especie.id);
-    setEtapa('concluida');
-  };
-
-  const tirarFotoComGpsAtual = async (uri: string) => {
-    // RF002 / RF016: captura automática de coordenadas no momento do avistamento
-    // (faz sentido só pra foto tirada agora, na hora — não pra galeria).
-    let coordenadasIniciais: { latitude: number; longitude: number } | undefined;
-    const permissaoLocalizacao = await Location.requestForegroundPermissionsAsync();
-    if (permissaoLocalizacao.status === 'granted') {
-      try {
-        const posicao = await Location.getCurrentPositionAsync({});
-        coordenadasIniciais = { latitude: posicao.coords.latitude, longitude: posicao.coords.longitude };
-      } catch {
-        // Cenário 4.4 (HU04): localização inválida/indisponível — segue sem coordenadas.
-      }
-    }
-    await processarFoto(uri, coordenadasIniciais);
-  };
-
-  const escolherDaGaleria = async () => {
-    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissao.status !== 'granted') {
-      Alert.alert('Permissão necessária', 'Autorize o acesso à galeria para selecionar uma foto.');
-      return;
-    }
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-    });
-    if (!resultado.canceled && resultado.assets[0]) {
-      // Foto da galeria pode ter sido tirada em outro lugar/hora — pede pra
-      // confirmar/ajustar a localização manualmente em vez de assumir o GPS atual.
-      setFotoDaGaleriaPendente(resultado.assets[0].uri);
-      setSeletorLocalizacaoVisivel(true);
+    if (primeiraLeva) {
+      setEtapa('classificando');
+      setPredicoes([]);
+      setEspecieSelecionadaId(null);
+      const resultado = await classificarImagem(novasUris[0]);
+      setPredicoes(resultado);
+      if (resultado.length > 0) setEspecieSelecionadaId(resultado[0].especie.id);
+      setEtapa('concluida');
     }
   };
 
-  const confirmarLocalizacaoDaGaleria = async (coordenadasEscolhidas: { latitude: number; longitude: number }) => {
-    setSeletorLocalizacaoVisivel(false);
-    if (fotoDaGaleriaPendente) {
-      await processarFoto(fotoDaGaleriaPendente, coordenadasEscolhidas);
-      setFotoDaGaleriaPendente(null);
-    }
-  };
-
-  const pularLocalizacaoDaGaleria = async () => {
-    setSeletorLocalizacaoVisivel(false);
-    if (fotoDaGaleriaPendente) {
-      await processarFoto(fotoDaGaleriaPendente);
-      setFotoDaGaleriaPendente(null);
-    }
+  const removerFoto = (indice: number) => {
+    setFotos((atual) => atual.filter((_, i) => i !== indice));
   };
 
   const tirarFoto = async () => {
+    if (fotos.length >= LIMITE_FOTOS) {
+      Alert.alert('Limite de fotos', `Você pode adicionar até ${LIMITE_FOTOS} fotos por avistamento.`);
+      return;
+    }
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
     if (permissao.status !== 'granted') {
       Alert.alert('Permissão necessária', 'Autorize o acesso à câmera para tirar uma foto.');
       return;
     }
-    const resultado = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-    if (!resultado.canceled && resultado.assets[0]) {
-      await tirarFotoComGpsAtual(resultado.assets[0].uri);
+
+    const primeiraFoto = fotos.length === 0;
+    // RF: "ajustar a foto" — crop nativo do picker (só funciona pra uma foto
+    // por vez, por isso câmera e galeria multi-seleção tratam isso diferente).
+    const resultado = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true });
+    if (resultado.canceled || !resultado.assets[0]) return;
+
+    if (primeiraFoto) {
+      // RF002 / RF016: captura automática de coordenadas no momento do avistamento
+      // (faz sentido só pra foto tirada agora, na hora — não pra galeria).
+      const permissaoLocalizacao = await Location.requestForegroundPermissionsAsync();
+      if (permissaoLocalizacao.status === 'granted') {
+        try {
+          const posicao = await Location.getCurrentPositionAsync({});
+          setCoordenadas({ latitude: posicao.coords.latitude, longitude: posicao.coords.longitude });
+        } catch {
+          // Cenário 4.4 (HU04): localização inválida/indisponível — segue sem coordenadas.
+        }
+      }
     }
+
+    await adicionarFotos([resultado.assets[0].uri]);
+  };
+
+  const escolherDaGaleria = async () => {
+    if (fotos.length >= LIMITE_FOTOS) {
+      Alert.alert('Limite de fotos', `Você pode adicionar até ${LIMITE_FOTOS} fotos por avistamento.`);
+      return;
+    }
+    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissao.status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Autorize o acesso à galeria para selecionar fotos.');
+      return;
+    }
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      // RF: múltiplas fotos por avistamento. allowsMultipleSelection e
+      // allowsEditing são mutuamente exclusivos no picker — com mais de uma
+      // foto não dá pra recortar, então o ajuste fica só pro fluxo da câmera.
+      allowsMultipleSelection: true,
+      selectionLimit: LIMITE_FOTOS - fotos.length,
+    });
+    if (resultado.canceled || resultado.assets.length === 0) return;
+
+    const uris = resultado.assets.map((asset) => asset.uri);
+    if (fotos.length === 0) {
+      // Fotos da galeria podem ter sido tiradas em outro lugar/hora — pede
+      // pra confirmar/ajustar a localização manualmente em vez de assumir o GPS atual.
+      setFotosDaGaleriaPendentes(uris);
+      setSeletorLocalizacaoVisivel(true);
+    } else {
+      await adicionarFotos(uris);
+    }
+  };
+
+  const confirmarLocalizacaoDaGaleria = async (coordenadasEscolhidas: { latitude: number; longitude: number }) => {
+    setSeletorLocalizacaoVisivel(false);
+    setCoordenadas(coordenadasEscolhidas);
+    await adicionarFotos(fotosDaGaleriaPendentes);
+    setFotosDaGaleriaPendentes([]);
+  };
+
+  const pularLocalizacaoDaGaleria = async () => {
+    setSeletorLocalizacaoVisivel(false);
+    await adicionarFotos(fotosDaGaleriaPendentes);
+    setFotosDaGaleriaPendentes([]);
   };
 
   const publicar = async () => {
     // Cenário 4.3 (HU04): publicação sem título/espécie da postagem.
-    if (!fotoUri) {
-      Alert.alert('Selecione uma foto', 'Escolha ou tire uma foto do avistamento antes de publicar.');
+    if (fotos.length === 0) {
+      Alert.alert('Selecione uma foto', 'Escolha ou tire ao menos uma foto do avistamento antes de publicar.');
       return;
     }
     const especieEscolhida = predicoes.find((p) => p.especie.id === especieSelecionadaId)?.especie;
@@ -133,7 +160,7 @@ export default function NewSightingScreen() {
     setPublicando(true);
     try {
       await criarPostagem({
-        fotoUri,
+        fotoUris: fotos,
         legenda: legenda.trim() || `Avistamento de ${especieEscolhida.nomePopular}`,
         especies: [especieEscolhida],
         latitude: coordenadas?.latitude,
@@ -151,8 +178,22 @@ export default function NewSightingScreen() {
     <ScrollView contentContainerStyle={{ padding: 16 }}>
       <Text style={styles.titulo}>Novo avistamento</Text>
 
-      {fotoUri ? (
-        <Image source={{ uri: fotoUri }} style={styles.foto} />
+      {fotos.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fotosLista}>
+          {fotos.map((uri, indice) => (
+            <View key={`${uri}-${indice}`} style={styles.fotoMiniaturaContainer}>
+              <Image source={{ uri }} style={styles.fotoMiniatura} />
+              <TouchableOpacity style={styles.removerFotoBotao} onPress={() => removerFoto(indice)}>
+                <Text style={styles.removerFotoTexto}>✕</Text>
+              </TouchableOpacity>
+              {indice === 0 && (
+                <View style={styles.capaSelo}>
+                  <Text style={styles.capaSeloTexto}>Capa</Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         <View style={styles.fotoVazia}>
           <Text style={styles.fotoVaziaTexto}>Nenhuma foto selecionada</Text>
@@ -167,6 +208,9 @@ export default function NewSightingScreen() {
           <Text style={styles.botaoSecundarioTexto}>Escolher da galeria</Text>
         </TouchableOpacity>
       </View>
+      {fotos.length > 0 && (
+        <Text style={styles.contadorFotos}>{fotos.length}/{LIMITE_FOTOS} fotos</Text>
+      )}
 
       <Text style={styles.localizacao}>
         {coordenadas
@@ -248,11 +292,47 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 16,
   },
-  foto: {
-    width: '100%',
-    height: 220,
+  fotosLista: {
+    gap: 10,
+  },
+  fotoMiniaturaContainer: {
+    position: 'relative',
+  },
+  fotoMiniatura: {
+    width: 140,
+    height: 140,
     borderRadius: 12,
     backgroundColor: colors.border,
+  },
+  removerFotoBotao: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removerFotoTexto: {
+    color: colors.surface,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  capaSelo: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  capaSeloTexto: {
+    color: colors.surface,
+    fontSize: 10,
+    fontWeight: '600',
   },
   fotoVazia: {
     width: '100%',
@@ -285,6 +365,12 @@ const styles = StyleSheet.create({
   botaoSecundarioTexto: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  contadorFotos: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'right',
   },
   localizacao: {
     marginTop: 12,

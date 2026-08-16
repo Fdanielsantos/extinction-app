@@ -1,7 +1,9 @@
 package com.extinction.api.domain;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,6 +16,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.HashSet;
@@ -42,8 +45,14 @@ public class Postagem {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    // Lista ordenada de fotos da postagem (RF: múltiplas fotos por avistamento) —
+    // era um único `fotoUrl`; virou coleção pra permitir mais de uma imagem.
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "postagem_foto", joinColumns = @JoinColumn(name = "postagem_id"))
+    @OrderColumn(name = "ordem")
     @Column(name = "foto_url", nullable = false, length = 1024)
-    private String fotoUrl;
+    @Builder.Default
+    private List<String> fotoUrls = new java.util.ArrayList<>();
 
     @Column(columnDefinition = "TEXT")
     private String legenda;

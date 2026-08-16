@@ -8,7 +8,9 @@ public record UsuarioResponse(
         String nome,
         String email,
         String userName,
-        Instant dataCadastro
+        Instant dataCadastro,
+        String bio,
+        String fotoUrl
 ) {
     public static UsuarioResponse from(Usuario usuario) {
         return new UsuarioResponse(
@@ -16,7 +18,9 @@ public record UsuarioResponse(
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getUserName(),
-                usuario.getDataCadastro()
+                usuario.getDataCadastro(),
+                usuario.getBio(),
+                usuario.getFotoUrl()
         );
     }
 }

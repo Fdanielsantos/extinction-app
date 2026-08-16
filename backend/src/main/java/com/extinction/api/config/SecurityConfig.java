@@ -26,7 +26,12 @@ public class SecurityConfig {
             "/actuator/health",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/uploads/**"
+            "/uploads/**",
+            // Chat em tempo real: o handshake do WebSocket não consegue mandar o
+            // header Authorization de forma confiável a partir do RN, então a
+            // autenticação de verdade acontece dentro do ChatHandshakeInterceptor
+            // (token via query param), não neste filtro HTTP.
+            "/ws/**"
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;

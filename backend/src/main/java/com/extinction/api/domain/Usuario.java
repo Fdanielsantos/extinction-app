@@ -56,6 +56,12 @@ public class Usuario implements UserDetails {
     @Column(name = "data_cadastro", nullable = false, updatable = false)
     private Instant dataCadastro;
 
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(name = "foto_url", length = 1024)
+    private String fotoUrl;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + tipoDaConta.name()));

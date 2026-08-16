@@ -1,7 +1,13 @@
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
+  FlatList,
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   StyleSheet,
   Text,
   TextInput,
@@ -9,9 +15,35 @@ import {
   View,
 } from 'react-native';
 
+import { MainStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { Postagem } from '../types';
 import StatusBadge from './StatusBadge';
+
+type Navegacao = NativeStackNavigationProp<MainStackParamList>;
+
+const LARGURA_TELA = Dimensions.get('window').width;
+
+function Avatar({ nome, fotoUrl, tamanho }: { nome: string; fotoUrl?: string; tamanho: number }) {
+  if (fotoUrl) {
+    return (
+      <Image
+        source={{ uri: fotoUrl }}
+        style={{ width: tamanho, height: tamanho, borderRadius: tamanho / 2 }}
+      />
+    );
+  }
+  return (
+    <View
+      style={[
+        styles.avatar,
+        { width: tamanho, height: tamanho, borderRadius: tamanho / 2 },
+      ]}
+    >
+      <Text style={[styles.avatarTexto, { fontSize: tamanho * 0.45 }]}>{nome.charAt(0)}</Text>
+    </View>
+  );
+}
 
 function formatarDataRelativa(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -28,10 +60,14 @@ interface Props {
   onComentar: (id: number, descricao: string) => Promise<void>;
 }
 
+const LARGURA_CARTAO = LARGURA_TELA - 32; // card tem marginHorizontal: 16 dos dois lados
+
 export default function PostCard({ postagem, onCurtir, onComentar }: Props) {
+  const navigation = useNavigation<Navegacao>();
   const [comentariosVisiveis, setComentariosVisiveis] = useState(false);
   const [novoComentario, setNovoComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [fotoAtual, setFotoAtual] = useState(0);
 
   const handleEnviarComentario = async () => {
     const descricao = novoComentario.trim();
@@ -45,21 +81,44 @@ export default function PostCard({ postagem, onCurtir, onComentar }: Props) {
     }
   };
 
+  const handleScrollFotos = (evento: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const indice = Math.round(evento.nativeEvent.contentOffset.x / LARGURA_CARTAO);
+    setFotoAtual(indice);
+  };
+
   return (
     <View style={styles.card}>
-      <View style={styles.cabecalho}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarTexto}>{postagem.autorNome.charAt(0)}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
+      <TouchableOpacity
+        style={styles.cabecalho}
+        onPress={() => navigation.navigate('PerfilUsuario', { idUsuario: postagem.idPerfil })}
+      >
+        <Avatar nome={postagem.autorNome} fotoUrl={postagem.autorFotoUrl} tamanho={36} />
+        <View style={{ flex: 1, marginLeft: 10 }}>
           <Text style={styles.autor}>{postagem.autorNome}</Text>
           <Text style={styles.local}>
             {postagem.localidade?.cidade ?? 'Localização não informada'} · {formatarDataRelativa(postagem.data)}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
-      <Image source={{ uri: postagem.fotoUrl }} style={styles.foto} />
+      <FlatList
+        data={postagem.fotoUrls}
+        keyExtractor={(uri, indice) => `${postagem.id}-${indice}`}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleScrollFotos}
+        renderItem={({ item }) => (
+          <Image source={{ uri: item }} style={[styles.foto, { width: LARGURA_CARTAO }]} />
+        )}
+      />
+      {postagem.fotoUrls.length > 1 && (
+        <View style={styles.pontosFoto}>
+          {postagem.fotoUrls.map((_, indice) => (
+            <View key={indice} style={[styles.ponto, indice === fotoAtual && styles.pontoAtivo]} />
+          ))}
+        </View>
+      )}
 
       <View style={styles.corpo}>
         <View style={styles.especies}>
@@ -148,7 +207,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
   },
   avatarTexto: {
     color: colors.surface,
@@ -163,9 +221,23 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   foto: {
-    width: '100%',
     height: 220,
     backgroundColor: colors.border,
+  },
+  pontosFoto: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+  },
+  ponto: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+  },
+  pontoAtivo: {
+    backgroundColor: colors.primary,
   },
   corpo: {
     padding: 12,

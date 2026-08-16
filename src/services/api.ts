@@ -4,7 +4,17 @@
 
 import Constants from 'expo-constants';
 
-import { Comentario, Especie, Postagem, PredicaoEspecie, RankingUsuario, Usuario } from '../types';
+import {
+  Comentario,
+  Conversa,
+  Especie,
+  Mensagem,
+  Postagem,
+  PredicaoEspecie,
+  RankingUsuario,
+  Usuario,
+  UsuarioPublico,
+} from '../types';
 
 function resolverBaseUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
@@ -24,6 +34,11 @@ let authToken: string | null = null;
 
 export function setAuthToken(token: string | null): void {
   authToken = token;
+}
+
+/** Usado pelo cliente WebSocket do chat, que não passa pelo `request()` acima. */
+export function getAuthToken(): string | null {
+  return authToken;
 }
 
 interface ApiErrorBody {
@@ -99,7 +114,7 @@ export async function adicionarComentario(postagemId: number, descricao: string)
 // ---- RF011 / RF016 / HU04: Criar avistamento ----
 
 export interface CriarPostagemInput {
-  fotoUri: string;
+  fotoUris: string[];
   legenda: string;
   especies: Especie[];
   latitude?: number;
@@ -108,11 +123,13 @@ export interface CriarPostagemInput {
 
 export async function criarPostagem(input: CriarPostagemInput): Promise<Postagem> {
   const formData = new FormData();
-  formData.append('foto', {
-    uri: input.fotoUri,
-    name: 'foto.jpg',
-    type: 'image/jpeg',
-  } as any);
+  input.fotoUris.forEach((uri, indice) => {
+    formData.append('fotos', {
+      uri,
+      name: `foto${indice}.jpg`,
+      type: 'image/jpeg',
+    } as any);
+  });
   formData.append('legenda', input.legenda);
   input.especies.forEach((especie) => formData.append('especieIds', String(especie.id)));
   if (input.latitude != null) formData.append('latitude', String(input.latitude));
@@ -150,4 +167,65 @@ export async function fetchEspecies(): Promise<Especie[]> {
 
 export async function fetchRanking(): Promise<RankingUsuario[]> {
   return request<RankingUsuario[]>('/api/ranking');
+}
+
+// ---- RF: seguir outros usuários ----
+
+export async function fetchUsuarios(): Promise<UsuarioPublico[]> {
+  return request<UsuarioPublico[]>('/api/usuarios');
+}
+
+export async function fetchUsuarioPublico(id: number): Promise<UsuarioPublico> {
+  return request<UsuarioPublico>(`/api/usuarios/${id}`);
+}
+
+export async function alternarSeguir(id: number): Promise<UsuarioPublico> {
+  return request<UsuarioPublico>(`/api/usuarios/${id}/seguir`, { method: 'POST' });
+}
+
+// ---- RF: gerenciamento de perfil ----
+
+export interface AtualizarPerfilInput {
+  nome: string;
+  bio?: string;
+  fotoUri?: string;
+}
+
+export async function atualizarPerfil(input: AtualizarPerfilInput): Promise<Usuario> {
+  const formData = new FormData();
+  formData.append('nome', input.nome);
+  if (input.bio != null) formData.append('bio', input.bio);
+  if (input.fotoUri) {
+    formData.append('foto', {
+      uri: input.fotoUri,
+      name: 'foto.jpg',
+      type: 'image/jpeg',
+    } as any);
+  }
+
+  return request<Usuario>('/api/usuarios/me', {
+    method: 'PUT',
+    body: formData,
+  });
+}
+
+// ---- RF: chats diretos e em grupo ----
+
+export async function fetchConversas(): Promise<Conversa[]> {
+  return request<Conversa[]>('/api/conversas');
+}
+
+export async function obterOuCriarConversaDireta(idOutroUsuario: number): Promise<Conversa> {
+  return request<Conversa>(`/api/conversas/direta/${idOutroUsuario}`, { method: 'POST' });
+}
+
+export async function criarGrupo(nome: string, participanteIds: number[]): Promise<Conversa> {
+  return request<Conversa>('/api/conversas/grupo', {
+    method: 'POST',
+    body: JSON.stringify({ nome, participanteIds }),
+  });
+}
+
+export async function fetchMensagens(conversaId: number): Promise<Mensagem[]> {
+  return request<Mensagem[]>(`/api/conversas/${conversaId}/mensagens`);
 }

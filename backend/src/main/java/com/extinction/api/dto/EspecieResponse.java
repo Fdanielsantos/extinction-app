@@ -9,6 +9,7 @@ public record EspecieResponse(
         String nomePopular,
         String descricao,
         String habitat,
+        String regiao,
         StatusEspecieAtual statusEspecieAtual
 ) {
     public static EspecieResponse from(Especie especie) {
@@ -18,6 +19,7 @@ public record EspecieResponse(
                 especie.getNomePopular(),
                 especie.getDescricao(),
                 especie.getHabitat(),
+                especie.getRegiao(),
                 especie.getStatusEspecieAtual()
         );
     }

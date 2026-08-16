@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '../theme/colors';
 import { REGIAO_INICIAL_BRASIL } from '../theme/mapStyle';
@@ -67,35 +67,44 @@ export default function LocationPickerModal({ visible, onConfirmar, onPular }: L
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onPular}>
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.cabecalho}>
-          <Text style={styles.titulo}>Onde foi o avistamento?</Text>
-          <Text style={styles.subtitulo}>
-            Toque no mapa ou arraste o pino pra posicionar o local certo.
-          </Text>
-        </View>
+      {/*
+        Modal do RN abre numa janela nativa separada — o SafeAreaProvider raiz
+        do app não enxerga essa janela, então os insets (status bar, notch)
+        vêm zerados e o conteúdo fica por baixo da barra de status/hora do
+        Android. Um SafeAreaProvider próprio aqui dentro recalcula os insets
+        pra essa janela do Modal.
+      */}
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+          <View style={styles.cabecalho}>
+            <Text style={styles.titulo}>Onde foi o avistamento?</Text>
+            <Text style={styles.subtitulo}>
+              Toque no mapa ou arraste o pino pra posicionar o local certo.
+            </Text>
+          </View>
 
-        <WebView
-          ref={webviewRef}
-          style={styles.mapa}
-          originWhitelist={['*']}
-          source={{ html: htmlMapa }}
-          onMessage={handleMensagem}
-        />
+          <WebView
+            ref={webviewRef}
+            style={styles.mapa}
+            originWhitelist={['*']}
+            source={{ html: htmlMapa }}
+            onMessage={handleMensagem}
+          />
 
-        <View style={styles.rodape}>
-          <TouchableOpacity style={styles.botaoSecundario} onPress={onPular}>
-            <Text style={styles.botaoSecundarioTexto}>Pular localização</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.botaoPrimario, !pino && styles.botaoDesabilitado]}
-            disabled={!pino}
-            onPress={() => pino && onConfirmar(pino)}
-          >
-            <Text style={styles.botaoPrimarioTexto}>Usar esta localização</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+          <View style={styles.rodape}>
+            <TouchableOpacity style={styles.botaoSecundario} onPress={onPular}>
+              <Text style={styles.botaoSecundarioTexto}>Pular localização</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.botaoPrimario, !pino && styles.botaoDesabilitado]}
+              disabled={!pino}
+              onPress={() => pino && onConfirmar(pino)}
+            >
+              <Text style={styles.botaoPrimarioTexto}>Usar esta localização</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

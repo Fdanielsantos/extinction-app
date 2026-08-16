@@ -19,6 +19,7 @@ interface AuthContextValue {
   login: (email: string, senha: string) => Promise<void>;
   registrar: (nome: string, email: string, senha: string) => Promise<void>;
   logout: () => Promise<void>;
+  atualizarUsuario: (usuario: Usuario) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -64,6 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       logout: async () => {
         await persistir(null, null);
+      },
+      atualizarUsuario: async (novoUsuario) => {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novoUsuario));
+        setUsuario(novoUsuario);
       },
     }),
     [usuario, carregando],

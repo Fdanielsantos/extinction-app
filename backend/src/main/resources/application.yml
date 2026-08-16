@@ -19,7 +19,9 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 10MB
+      # RF: múltiplas fotos por avistamento (até 6) — precisa caber a soma de
+      # todos os arquivos numa única requisição, não só um arquivo por vez.
+      max-request-size: 50MB
 
 server:
   port: ${SERVER_PORT:8080}

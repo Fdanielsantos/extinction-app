@@ -38,14 +38,14 @@ public class PostagemController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostagemResponse> criar(
             @AuthenticationPrincipal Usuario usuarioLogado,
-            @RequestParam("foto") MultipartFile foto,
+            @RequestParam("fotos") List<MultipartFile> fotos,
             @RequestParam("legenda") String legenda,
             @RequestParam("especieIds") List<Long> especieIds,
             @RequestParam(value = "latitude", required = false) Double latitude,
             @RequestParam(value = "longitude", required = false) Double longitude
     ) {
         PostagemResponse postagem = postagemService.criar(
-                usuarioLogado, foto, legenda, especieIds, latitude, longitude);
+                usuarioLogado, fotos, legenda, especieIds, latitude, longitude);
         return ResponseEntity.status(HttpStatus.CREATED).body(postagem);
     }
 

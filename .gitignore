@@ -52,9 +52,7 @@ backend/uploads/
 HELP.md
 
 # ml (dataset building - generated outputs, not source)
-ml/data/*
-!ml/data/.gitkeep
-ml/images/
+
 ml/.venv/
 __pycache__/
 *.pyc

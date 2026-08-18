@@ -1,1 +1,6 @@
 requests>=2.31
+Pillow>=10.0
+
+# train_model.py precisa de tensorflow (ja vem pre-instalado no Google Colab,
+# recomendado pra treino por causa da GPU). Pra rodar local:
+# tensorflow>=2.16

@@ -22,6 +22,17 @@ Saida (em --output-dir):
 Uso:
     python train_model.py --download-log ml/data/download_log.csv --output-dir ml/model
     python train_model.py --download-log ml/data/download_log.csv --limit-classes 20 --epochs 2   # smoke test
+
+Checkpointing (importante rodando em Colab, onde o runtime pode cair no meio de um
+treino de horas): a cada epoca que melhora o monitor (val_loss, ou loss sem
+validacao), salva o modelo inteiro em --output-dir/checkpoint_head.keras (fase 1) e
+checkpoint_finetune.keras (fase 2). Se o runtime desconectar, reabra o notebook e
+rode de novo com --resume (mesmos argumentos) pra continuar dali em vez de do zero.
+
+Dica pra Colab: aponte --output-dir pra uma pasta no Google Drive montado (assim os
+checkpoints sobrevivem a desconexoes), mas baixe/mantenha as IMAGENS em disco local
+do runtime (ex: /content/data/images, nao Drive) -- Drive e' notoriamente lento pra
+ler centenas de milhares de arquivos pequenos durante o treino.
 """
 
 from __future__ import annotations
@@ -153,6 +164,7 @@ def main() -> None:
     parser.add_argument("--fine-tune-lr", type=float, default=1e-5)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--limit-classes", type=int, default=None, help="Usar so as N primeiras classes (smoke test)")
+    parser.add_argument("--resume", action="store_true", help="Retomar de checkpoint_head.keras/checkpoint_finetune.keras existentes em --output-dir (util em Colab apos desconexao)")
     args = parser.parse_args()
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -196,17 +208,29 @@ def main() -> None:
     metrics = ["accuracy", keras.metrics.SparseTopKCategoricalAccuracy(k=5, name="top5_acc")]
     log_path = args.output_dir / "training_log.csv"
 
+    monitor = "val_loss" if val_ds else "loss"
+    checkpoint_head = args.output_dir / "checkpoint_head.keras"
+    checkpoint_finetune = args.output_dir / "checkpoint_finetune.keras"
+
     print(f"\n== Fase 1: treinando a cabeca (base '{args.base_model}' congelada) ==")
+    if args.resume and checkpoint_head.exists():
+        print(f"--resume: carregando checkpoint existente de {checkpoint_head}")
+        model = keras.models.load_model(checkpoint_head)
     model.compile(optimizer=keras.optimizers.Adam(args.learning_rate), loss="sparse_categorical_crossentropy", metrics=metrics)
     callbacks = [
         keras.callbacks.CSVLogger(str(log_path), append=False),
-        keras.callbacks.EarlyStopping(monitor="val_loss" if val_ds else "loss", patience=3, restore_best_weights=True),
-        keras.callbacks.ReduceLROnPlateau(monitor="val_loss" if val_ds else "loss", factor=0.5, patience=2),
+        keras.callbacks.ModelCheckpoint(str(checkpoint_head), monitor=monitor, save_best_only=True),
+        keras.callbacks.EarlyStopping(monitor=monitor, patience=3, restore_best_weights=True),
+        keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=2),
     ]
     model.fit(train_ds, validation_data=val_ds, epochs=args.epochs, callbacks=callbacks)
 
     if args.fine_tune_epochs > 0:
         print(f"\n== Fase 2: fine-tuning (descongelando as ultimas {abs(args.fine_tune_at_layer)} camadas) ==")
+        if args.resume and checkpoint_finetune.exists():
+            print(f"--resume: carregando checkpoint existente de {checkpoint_finetune}")
+            model = keras.models.load_model(checkpoint_finetune)
+            base = model.layers[1]  # mesmo indice usado em build_model: inputs -> base -> dropout -> dense
         base.trainable = True
         for layer in base.layers[: args.fine_tune_at_layer]:
             layer.trainable = False
@@ -214,8 +238,9 @@ def main() -> None:
         model.compile(optimizer=keras.optimizers.Adam(args.fine_tune_lr), loss="sparse_categorical_crossentropy", metrics=metrics)
         callbacks = [
             keras.callbacks.CSVLogger(str(log_path), append=True),
-            keras.callbacks.EarlyStopping(monitor="val_loss" if val_ds else "loss", patience=3, restore_best_weights=True),
-            keras.callbacks.ReduceLROnPlateau(monitor="val_loss" if val_ds else "loss", factor=0.5, patience=2),
+            keras.callbacks.ModelCheckpoint(str(checkpoint_finetune), monitor=monitor, save_best_only=True),
+            keras.callbacks.EarlyStopping(monitor=monitor, patience=3, restore_best_weights=True),
+            keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=2),
         ]
         model.fit(train_ds, validation_data=val_ds, epochs=args.fine_tune_epochs, callbacks=callbacks)
 

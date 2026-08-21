@@ -59,3 +59,5 @@ ml/data/download_log.csv
 ml/data/images/
 __pycache__/
 *.pyc
+ml/data/images/
+ml/model/

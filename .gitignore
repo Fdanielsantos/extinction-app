@@ -25,6 +25,7 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+map_species_images.py
 
 # macOS
 .DS_Store
@@ -54,6 +55,8 @@ HELP.md
 # ml (dataset building - generated outputs, not source)
 
 ml/.venv/
+ml/data/download_log.csv
+ml/data/images/
 __pycache__/
 *.pyc
 ml/data/images/

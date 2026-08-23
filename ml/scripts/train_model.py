@@ -83,12 +83,22 @@ def load_class_images(download_log: Path, min_images_per_class: int) -> dict[str
             if name:
                 by_class[taxon_key]["scientificName"][name] += 1
 
+    total_missing = 0
     kept = {}
     for taxon_key, data in by_class.items():
-        if len(data["paths"]) < min_images_per_class:
+        existing_paths = [p for p in data["paths"] if Path(p).is_file()]
+        total_missing += len(data["paths"]) - len(existing_paths)
+        if len(existing_paths) < min_images_per_class:
             continue
         display_name = data["scientificName"].most_common(1)[0][0] if data["scientificName"] else taxon_key
-        kept[taxon_key] = {"scientificName": display_name, "paths": data["paths"]}
+        kept[taxon_key] = {"scientificName": display_name, "paths": existing_paths}
+
+    if total_missing:
+        print(
+            f"Aviso: {total_missing} imagens listadas como 'ok' no CSV nao foram "
+            f"encontradas em disco (ignoradas) -- baixe de novo com download_images.py "
+            f"--resume se quiser recupera-las, ou ignore se for so um punhado."
+        )
     return kept
 
 

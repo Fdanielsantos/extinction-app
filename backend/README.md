@@ -98,7 +98,7 @@ no ImageNet** (resolvido automaticamente pelo model zoo do próprio DJL, sem pre
 nenhum arquivo de modelo manualmente).
 
 **Isso não é um modelo treinado nas espécies do catálogo** — treinar isso de verdade exige
-curadoria de dataset (GBIF/iNaturalist) + treino em Python/Colab, fora do escopo do que dá pra
+curadoria de dataset (GBIF/iNaturalist) + treino em Python (local, ver `ml/scripts/train_model.py`), fora do escopo do que dá pra
 fazer direto no backend Java (ver seção 6 da recomendação). Por isso, hoje só 3 rótulos do
 ImageNet têm mapeamento pro catálogo (`ROTULOS_IMAGENET` em `TFmodel.java`):
 
@@ -112,7 +112,7 @@ Mico-leão-dourado e Araucária não têm classe equivalente no ImageNet-1k — 
 preenchimento de baixa confiança fixa (a tela de "Novo avistamento" sempre mostra 3 opções pra
 escolher, mesmo sem detecção real).
 
-**Quando houver um modelo treinado de verdade** (SavedModel exportado do Colab): a troca é
+**Quando houver um modelo treinado de verdade** (SavedModel exportado por `ml/scripts/train_model.py`): a troca é
 isolada dentro de `TFmodel.java` — carregar esse modelo em vez do ResNet50 do zoo, e ajustar
 `ROTULOS_IMAGENET` (ou a lógica de mapeamento, se as classes do modelo já baterem 1:1 com o
 catálogo). Nada em `EspecieController`, `EspecieIdentificationService` ou no frontend precisa

@@ -1,0 +1,2 @@
+epoch,accuracy,loss,top5_acc,val_accuracy,val_loss,val_top5_acc
+0,0.44186046719551086,1.1979347467422485,1.0,0.625,0.7364243865013123,1.0

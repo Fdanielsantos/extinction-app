@@ -2,14 +2,36 @@
 """Treina um classificador de imagem (transfer learning) nas especies baixadas por
 download_images.py.
 
-Pensado pra rodar num ambiente com GPU (Google Colab, ver
-backend/README.md secao "Reconhecimento de imagem (RF018)") — treinar milhares de
-classes em CPU e' inviavel. TensorFlow/Pillow ja vem pre-instalado no Colab; pra
-rodar local, `pip install tensorflow pillow`.
+Roda 100% local, CPU (ver backend/README.md secao "Reconhecimento de imagem
+(RF018)"). Setup (Windows, uma vez so):
+
+    py -3.13 -m venv C:/mlvenvs/extinction-ml
+    C:/mlvenvs/extinction-ml/Scripts/pip install -r ml/requirements.txt
+
+NAO cria o venv dentro de ml/.venv apesar do .gitignore prever esse caminho: o
+projeto costuma ficar bem aninhado dentro do OneDrive, e o instalador do
+TensorFlow esbarra no limite de 260 caracteres do Windows pra alguns arquivos
+internos (erro "No such file or directory" no meio do `pip install`). Instalar
+numa pasta curta fora do OneDrive evita isso sem precisar mexer em Long Paths do
+Windows (que exigiria admin em cada maquina do time).
+
+Depois, sempre chamando o python de dentro desse venv (nao precisa ativar):
+
+    C:/mlvenvs/extinction-ml/Scripts/python ml/scripts/train_model.py --download-log ml/data/download_log.csv
+
+Sem GPU: TensorFlow >= 2.11 nao usa GPU nativamente no Windows (nem placa NVIDIA sem
+WSL2, nem AMD -- o plugin DirectML que permitia isso foi descontinuado pela
+Microsoft). O treino roda em CPU mesmo; com milhares de classes isso e' lento
+(horas a dias, nao minutos) -- use --limit-classes e --epochs baixos pra smoke test
+antes de rodar o treino completo, e considere --base-model mobilenet_v2 (mais leve)
+e/ou aumentar --min-images-per-class pra reduzir o numero de classes.
 
 Entrada: download_log.csv (gerado por download_images.py), so as linhas status=ok.
 Classes com menos de --min-images-per-class imagens sao descartadas (sem exemplo
-suficiente pra separar treino/validacao de forma minimamente confiavel).
+suficiente pra separar treino/validacao de forma minimamente confiavel). O campo
+localPath do CSV e' relativo ao diretorio ml/ (onde download_images.py normalmente
+roda) -- resolvido aqui contra a pasta pai de scripts/, entao funciona chamando
+train_model.py de qualquer lugar.
 
 Saida (em --output-dir):
   - saved_model/       TensorFlow SavedModel (formato que o DJL carrega direto)
@@ -20,19 +42,14 @@ Saida (em --output-dir):
   - training_log.csv      historico de metricas por epoca (cabeca + fine-tuning)
 
 Uso:
-    python train_model.py --download-log ml/data/download_log.csv --output-dir ml/model
-    python train_model.py --download-log ml/data/download_log.csv --limit-classes 20 --epochs 2   # smoke test
+    python train_model.py --download-log data/download_log.csv --output-dir model
+    python train_model.py --download-log data/download_log.csv --limit-classes 20 --epochs 2   # smoke test
 
-Checkpointing (importante rodando em Colab, onde o runtime pode cair no meio de um
-treino de horas): a cada epoca que melhora o monitor (val_loss, ou loss sem
-validacao), salva o modelo inteiro em --output-dir/checkpoint_head.keras (fase 1) e
-checkpoint_finetune.keras (fase 2). Se o runtime desconectar, reabra o notebook e
-rode de novo com --resume (mesmos argumentos) pra continuar dali em vez de do zero.
-
-Dica pra Colab: aponte --output-dir pra uma pasta no Google Drive montado (assim os
-checkpoints sobrevivem a desconexoes), mas baixe/mantenha as IMAGENS em disco local
-do runtime (ex: /content/data/images, nao Drive) -- Drive e' notoriamente lento pra
-ler centenas de milhares de arquivos pequenos durante o treino.
+Checkpointing (util em treinos longos de CPU que podem ser interrompidos): a cada
+epoca que melhora o monitor (val_loss, ou loss sem validacao), salva o modelo
+inteiro em --output-dir/checkpoint_head.keras (fase 1) e checkpoint_finetune.keras
+(fase 2). Se o treino for interrompido, rode de novo com --resume (mesmos
+argumentos) pra continuar dali em vez de do zero.
 """
 
 from __future__ import annotations
@@ -46,7 +63,13 @@ from pathlib import Path
 
 def load_class_images(download_log: Path, min_images_per_class: int) -> dict[str, dict]:
     """Retorna {taxonKey: {"scientificName": str, "paths": [str, ...]}} so pras
-    classes com >= min_images_per_class downloads bem-sucedidos."""
+    classes com >= min_images_per_class downloads bem-sucedidos.
+
+    O localPath gravado no CSV por download_images.py e' relativo ao diretorio ml/
+    (de onde aquele script normalmente roda), nao ao cwd de train_model.py.
+    Resolvemos aqui contra ml/ (pai de scripts/, onde este arquivo mora) pra
+    funcionar de qualquer lugar que train_model.py for chamado."""
+    base_dir = Path(__file__).resolve().parent.parent
     by_class: dict[str, dict] = defaultdict(lambda: {"scientificName": Counter(), "paths": []})
 
     with download_log.open(newline="", encoding="utf-8") as f:
@@ -55,7 +78,7 @@ def load_class_images(download_log: Path, min_images_per_class: int) -> dict[str
             if row.get("status") != "ok" or not row.get("localPath"):
                 continue
             taxon_key = row["gbifTaxonKey"]
-            by_class[taxon_key]["paths"].append(row["localPath"])
+            by_class[taxon_key]["paths"].append(str(base_dir / row["localPath"]))
             name = row.get("scientificName") or ""
             if name:
                 by_class[taxon_key]["scientificName"][name] += 1

@@ -1,6 +1,7 @@
 requests>=2.31
 Pillow>=10.0
 
-# train_model.py precisa de tensorflow (ja vem pre-instalado no Google Colab,
-# recomendado pra treino por causa da GPU). Pra rodar local:
-# tensorflow>=2.16
+# train_model.py precisa de tensorflow. Treino roda 100% local em CPU (ver
+# docstring de scripts/train_model.py) -- sem GPU no Windows, nem NVIDIA sem WSL2
+# nem AMD (o plugin DirectML foi descontinuado).
+tensorflow>=2.20

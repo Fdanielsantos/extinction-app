@@ -58,3 +58,4 @@ __pycache__/
 *.pyc
 ml/data/images/
 ml/model/
+ml/smoke_test/

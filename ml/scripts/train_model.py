@@ -19,12 +19,16 @@ Depois, sempre chamando o python de dentro desse venv (nao precisa ativar):
 
     C:/mlvenvs/extinction-ml/Scripts/python ml/scripts/train_model.py --download-log ml/data/download_log.csv
 
-Sem GPU: TensorFlow >= 2.11 nao usa GPU nativamente no Windows (nem placa NVIDIA sem
-WSL2, nem AMD -- o plugin DirectML que permitia isso foi descontinuado pela
-Microsoft). O treino roda em CPU mesmo; com milhares de classes isso e' lento
-(horas a dias, nao minutos) -- use --limit-classes e --epochs baixos pra smoke test
-antes de rodar o treino completo, e considere --base-model mobilenet_v2 (mais leve)
-e/ou aumentar --min-images-per-class pra reduzir o numero de classes.
+Sem GPU (setup acima): TensorFlow >= 2.11 nao usa GPU nativamente no Windows (nem
+placa NVIDIA sem WSL2, nem AMD -- o plugin DirectML que permitia isso foi
+descontinuado pela Microsoft). O treino roda em CPU mesmo; com milhares de classes
+isso e' lento (horas a dias, nao minutos) -- use --limit-classes e --epochs baixos
+pra smoke test antes de rodar o treino completo, e considere --base-model
+mobilenet_v2 (mais leve) e/ou aumentar --min-images-per-class pra reduzir o numero
+de classes.
+
+Com GPU NVIDIA: bem mais rapido (facilmente 15-40x), mas precisa rodar via WSL2 --
+ver passo a passo completo em ml/README.md (secao "Rodando com GPU NVIDIA").
 
 Entrada: download_log.csv (gerado por download_images.py), so as linhas status=ok.
 Classes com menos de --min-images-per-class imagens sao descartadas (sem exemplo

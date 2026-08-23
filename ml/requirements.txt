@@ -1,7 +1,9 @@
 requests>=2.31
 Pillow>=10.0
 
-# train_model.py precisa de tensorflow. Treino roda 100% local em CPU (ver
-# docstring de scripts/train_model.py) -- sem GPU no Windows, nem NVIDIA sem WSL2
-# nem AMD (o plugin DirectML foi descontinuado).
+# train_model.py precisa de tensorflow. Por padrao roda 100% local em CPU (ver
+# docstring de scripts/train_model.py) -- sem GPU no Windows nativo, nem NVIDIA
+# sem WSL2 nem AMD (o plugin DirectML foi descontinuado). Pra treinar com GPU
+# NVIDIA via WSL2, troque a instalacao abaixo por `tensorflow[and-cuda]` -- ver
+# passo a passo em ml/README.md ("Rodando com GPU NVIDIA").
 tensorflow>=2.20

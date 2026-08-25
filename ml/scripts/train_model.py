@@ -82,7 +82,8 @@ def load_class_images(download_log: Path, min_images_per_class: int) -> dict[str
             if row.get("status") != "ok" or not row.get("localPath"):
                 continue
             taxon_key = row["gbifTaxonKey"]
-            by_class[taxon_key]["paths"].append(str(base_dir / row["localPath"]))
+            rel_path = row["localPath"].replace("\\", "/")
+            by_class[taxon_key]["paths"].append(str(base_dir / rel_path))
             name = row.get("scientificName") or ""
             if name:
                 by_class[taxon_key]["scientificName"][name] += 1

@@ -41,6 +41,17 @@ export function getAuthToken(): string | null {
   return authToken;
 }
 
+// Token salvo localmente pode ter expirado (ou ficado inválido, ex.: backend
+// reiniciado com outro JWT_SECRET) entre uma sessão do app e outra. Sem isso,
+// o AuthContext restaura o usuário do AsyncStorage sem checar o token, e cada
+// tela autenticada quebra com 401 "Sessão expirada..." em vez de voltar pro
+// login. O AuthContext se registra aqui pra limpar a sessão nesse caso.
+let onSessaoExpirada: (() => void) | null = null;
+
+export function setOnSessaoExpirada(callback: (() => void) | null): void {
+  onSessaoExpirada = callback;
+}
+
 interface ApiErrorBody {
   status: number;
   message: string;
@@ -52,12 +63,60 @@ interface ApiErrorBody {
 // spinner pra sempre, sem erro nenhum pro usuário.
 const TIMEOUT_MS = 30000;
 
+// Desde o SDK 56, o `fetch` global da Expo é a implementação própria (WinterCG) e
+// não entende o atalho clássico do RN pra arquivo em FormData (`{ uri, name, type }`
+// em vez de um Blob/File de verdade) -- toda chamada com foto quebra com "Unsupported
+// FormDataPart implementation". XMLHttpRequest não passa por essa camada e ainda
+// suporta o atalho nativamente, então uploads (FormData) usam XHR; o resto (JSON)
+// continua em fetch normalmente.
+function requestMultipart<T>(path: string, options: RequestInit): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open((options.method as string) ?? 'GET', `${API_BASE_URL}${path}`);
+    if (authToken) {
+      xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+    }
+    xhr.timeout = TIMEOUT_MS;
+    xhr.onerror = () =>
+      reject(new Error('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'));
+    xhr.ontimeout = () =>
+      reject(new Error('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'));
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (xhr.status === 204 || !xhr.responseText) {
+          resolve(undefined as T);
+          return;
+        }
+        resolve(JSON.parse(xhr.responseText));
+        return;
+      }
+      if (xhr.status === 401) {
+        setAuthToken(null);
+        onSessaoExpirada?.();
+      }
+      let mensagem = 'Erro inesperado ao comunicar com o servidor.';
+      try {
+        const corpo: ApiErrorBody = JSON.parse(xhr.responseText);
+        if (corpo?.message) mensagem = corpo.message;
+      } catch {
+        // corpo vazio/não-JSON -- mantém a mensagem genérica.
+      }
+      reject(new Error(mensagem));
+    };
+    xhr.send(options.body as FormData);
+  });
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const headers: Record<string, string> = { ...(options.headers as Record<string, string>) };
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-  if (!isFormData) {
-    headers['Content-Type'] = 'application/json';
+  if (isFormData) {
+    return requestMultipart<T>(path, options);
   }
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+    'Content-Type': 'application/json',
+  };
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`;
   }
@@ -79,6 +138,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!resposta.ok) {
     const corpo: ApiErrorBody | null = await resposta.json().catch(() => null);
+    if (resposta.status === 401) {
+      setAuthToken(null);
+      onSessaoExpirada?.();
+    }
     throw new Error(corpo?.message ?? 'Erro inesperado ao comunicar com o servidor.');
   }
   if (resposta.status === 204) {

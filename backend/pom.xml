@@ -20,7 +20,6 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.12.6</jjwt.version>
-        <djl.version>0.33.0</djl.version>
     </properties>
 
     <dependencies>
@@ -87,22 +86,12 @@
             <version>2.7.0</version>
         </dependency>
 
-        <!-- RF018: motor de inferência de imagem (ver com.extinction.api.ai.TFmodel) -->
+        <!-- RestClient (ver com.extinction.api.ai.BioClipModel) monta o corpo multipart/form-data
+             usando classes do Reactor por baixo dos panos, mesmo em uso síncrono. Sem isso,
+             POST com multipart quebra em runtime com NoClassDefFoundError: org/reactivestreams/Publisher. -->
         <dependency>
-            <groupId>ai.djl</groupId>
-            <artifactId>api</artifactId>
-            <version>${djl.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.djl.tensorflow</groupId>
-            <artifactId>tensorflow-engine</artifactId>
-            <version>${djl.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>ai.djl.tensorflow</groupId>
-            <artifactId>tensorflow-model-zoo</artifactId>
-            <version>${djl.version}</version>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
         </dependency>
 
         <dependency>

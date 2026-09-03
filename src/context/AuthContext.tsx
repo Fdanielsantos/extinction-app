@@ -1,13 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from 'react';
 
-import { login as apiLogin, register as apiRegister, setAuthToken } from '../services/api';
+import {
+  login as apiLogin,
+  register as apiRegister,
+  setAuthToken,
+  setOnSessaoExpirada,
+} from '../services/api';
 import { Usuario } from '../types';
 
 const STORAGE_KEY = '@extinction/usuario';
@@ -39,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setCarregando(false));
   }, []);
 
-  const persistir = async (novoUsuario: Usuario | null, token: string | null) => {
+  const persistir = useCallback(async (novoUsuario: Usuario | null, token: string | null) => {
     setUsuario(novoUsuario);
     setAuthToken(token);
     if (novoUsuario && token) {
@@ -49,7 +55,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.removeItem(STORAGE_KEY);
       await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
     }
-  };
+  }, []);
+
+  // Qualquer chamada à API que voltar 401 (token expirado/inválido) cai aqui —
+  // derruba a sessão local pra o RootNavigator voltar pro login em vez de
+  // deixar o usuário preso em telas autenticadas que só retornam erro.
+  useEffect(() => {
+    setOnSessaoExpirada(() => {
+      persistir(null, null);
+    });
+    return () => setOnSessaoExpirada(null);
+  }, [persistir]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

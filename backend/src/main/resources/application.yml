@@ -29,11 +29,11 @@ server:
 app:
   upload-dir: ${UPLOAD_DIR:uploads}
   ml:
-    # Caminho pra pasta gerada por ml/scripts/train_model.py (contém saved_model/ e
-    # synset.txt). Default assume que o backend roda com cwd em backend/ (mvn
-    # spring-boot:run, IDE) -- via Docker Compose isso é sobrescrito por MODEL_DIR
-    # apontando pro bind mount de ../ml/model (ver backend/docker-compose.yml).
-    model-dir: ${MODEL_DIR:../ml/model}
+    # URL do serviço local de inferência BioCLIP 2.5 (ver ml/bioclip_service/main.py e
+    # com.extinction.api.ai.BioClipModel) -- roda no servidor, não no cliente/app. Via
+    # Docker Compose isso é sobrescrito por BIOCLIP_URL apontando pro serviço `bioclip`
+    # (ver backend/docker-compose.yml).
+    bioclip-url: ${BIOCLIP_URL:http://localhost:8000}
   identificacao:
     # Confiança mínima (%) pra uma predição do modelo virar candidata de espécie;
     # abaixo disso a resposta do RF018 vem vazia ("espécie não identificada"). O

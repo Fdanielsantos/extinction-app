@@ -8,6 +8,8 @@ import com.extinction.api.service.EspecieService;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/especies")
 public class EspecieController {
+
+    private static final Logger log = LoggerFactory.getLogger(EspecieController.class);
 
     private final EspecieService especieService;
     private final EspecieIdentificationService especieIdentificationService;
@@ -47,6 +51,7 @@ public class EspecieController {
         } catch (IOException e) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Não foi possível ler a imagem enviada.");
         } catch (CompletionException e) {
+            log.error("Falha ao identificar a espécie na imagem.", e);
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Falha ao identificar a espécie na imagem.");
         }
     }

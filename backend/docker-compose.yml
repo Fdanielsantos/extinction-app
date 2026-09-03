@@ -17,29 +17,37 @@ services:
       timeout: 5s
       retries: 10
 
+  bioclip:
+    build: ../ml/bioclip_service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Cache dos pesos do modelo e dos embeddings de texto da taxonomia embutida
+      # (baixados do Hugging Face Hub via pybioclip, ver ml/bioclip_service/main.py)
+      # -- evita rebaixar a cada restart.
+      - bioclip_hf_cache:/root/.cache/huggingface
+
   backend:
     build: .
     restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
+      bioclip:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_URL: jdbc:mysql://mysql:3306/extinction?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USER: extinction
       DB_PASSWORD: extinction
-      MODEL_DIR: /app/ml-model
+      BIOCLIP_URL: http://bioclip:8000
     ports:
       - "8080:8080"
     volumes:
       - uploads_data:/app/uploads
-      - djl_cache_data:/root/.djl.ai
-      # Modelo treinado (RF018) -- bind mount em vez de COPY na imagem: os arquivos
-      # já vêm versionados via Git LFS em ../ml/model (ver ml/README.md), montar é
-      # mais rápido que rebuildar a imagem toda vez que o modelo for retreinado.
-      - ../ml/model:/app/ml-model:ro
 
 volumes:
   mysql_data:
   uploads_data:
-  djl_cache_data:
+  bioclip_hf_cache:

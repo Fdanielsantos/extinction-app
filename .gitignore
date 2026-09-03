@@ -62,3 +62,4 @@ __pycache__/
 ml/data/images/
 ml/model/
 ml/smoke_test/
+ml/bioclip_service/.venv/

@@ -32,6 +32,11 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/uploads/**",
+            // Sem isso, um erro real (ex.: 500) em qualquer endpoint autenticado vira um
+            // 401 enganoso: o forward interno pro /error passa pelo filtro de novo, e
+            // "anyRequest().authenticated()" barra esse forward antes do erro de verdade
+            // chegar no cliente -- quem chama só vê "não autenticado", não a causa real.
+            "/error",
             // Chat em tempo real: o handshake do WebSocket não consegue mandar o
             // header Authorization de forma confiável a partir do RN, então a
             // autenticação de verdade acontece dentro do ChatHandshakeInterceptor

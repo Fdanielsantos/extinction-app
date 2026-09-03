@@ -115,9 +115,47 @@ extinction-app/
 
 1. **Recuperação de senha** (`mockRequestPasswordReset` em `src/services/mockApi.ts`) — não há
    infraestrutura de envio de e-mail no backend ainda.
-2. **Reconhecimento de espécie** funciona de verdade (DJL + TensorFlow no backend), mas hoje usa
-   um classificador genérico do ImageNet, não um modelo treinado nas espécies do catálogo — ver
-   `backend/README.md` pra detalhes e o que falta pra ter um modelo real.
+2. ~~Reconhecimento de espécie usa um classificador genérico do ImageNet~~ — **atualizado**:
+   agora carrega o SavedModel real treinado por `ml/scripts/train_model.py` (transfer learning
+   sobre MobileNetV2, ~11 mil espécies do GBIF, não só as do catálogo de exemplo). Detalhes,
+   configuração e limitações na seção abaixo e em `backend/README.md`.
+
+### Reconhecimento de espécie (RF018) com o modelo treinado
+
+- `ai/TFmodel.java` carrega `ml/model/saved_model/` (Git LFS) via DJL, com um translator
+  próprio (`SpeciesClassifierTranslator`) que replica o pré-processamento do treino (resize
+  224×224, reescala pra `[-1, 1]`, layout HWC — **não** o `ToTensor()` padrão do DJL, que
+  quebraria a inferência num SavedModel do Keras). Validado com um smoke test manual rodando
+  inferência de verdade contra o modelo real antes de entrar no código.
+- Previsões abaixo de `app.identificacao.confianca-minima` (default 50%, env
+  `CONFIANCA_MINIMA_IDENTIFICACAO`) são descartadas — sem nenhuma previsão confiante, a resposta
+  vem vazia e o app mostra "espécie não identificada" em vez de forçar uma sugestão de baixa
+  confiança (comportamento antigo, removido).
+- O catálogo (`Especie`) não tem mais curadoria manual cobrindo todo o espaço de espécies
+  reconhecíveis (~11 mil, inviável à mão): a primeira identificação confiante de uma espécie
+  nova cria a linha automaticamente (nome popular = nome científico, status `NAO_AVALIADO`);
+  curar descrição/habitat/status real depois é um UPDATE manual, não um fluxo de código novo.
+- Modelo atual ainda modesto (`ml/model/training_log.csv`: val_accuracy ~32%, val_top5_acc ~49%
+  em ~11 mil classes) — o limiar de confiança acima deve ser reajustado conforme o treino
+  evoluir.
+
+### Avisos / decisões em aberto (não resolvidos por conta própria)
+
+- **CI não baixa o modelo via Git LFS.** `.github/workflows/backend-ci.yml` usa o checkout
+  padrão, que ignora conteúdo LFS — então nenhum teste de inferência real roda em CI hoje (o
+  smoke test usado pra validar a integração foi removido do repo de propósito, só existiu
+  localmente). Se a equipe quiser esse teste em CI, precisa adicionar `lfs: true` no
+  `actions/checkout`, mas isso passa a baixar ~500MB por execução contra a cota gratuita de
+  1GB/mês de banda LFS do GitHub — decisão de custo/benefício da equipe, não ativei por padrão.
+- **Publicar avistamento sem espécie identificada ainda não funciona de ponta a ponta.**
+  `NewSightingScreen.tsx` tem um comentário citando "HU04 cenário 4.3: publicação sem
+  título/espécie", mas `PostagemController`/`PostagemService.criar` exigem `especieIds` não
+  vazio (`especieIds` nem é opcional no `@RequestParam`, e o service rejeita lista vazia com
+  400). Antes, isso nunca aparecia na prática porque o backend sempre preenchia 3 candidatas
+  falsas de baixa confiança; agora que "não identificado" é uma resposta real e esperada, quem
+  cair nesse caso fica sem conseguir publicar. Não mudei essa regra de negócio porque decidir se
+  postagens podem existir sem espécie é escopo de produto, não de integração do modelo — precisa
+  de uma decisão explícita da equipe.
 
 ## O que ainda não existe
 

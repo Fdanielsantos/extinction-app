@@ -46,7 +46,14 @@ public class Especie {
     // linhas antigas sem valor — o frontend cai num rótulo padrão nesse caso.
     private String regiao;
 
+    // columnDefinition explícito pra forçar VARCHAR: por padrão o dialect MySQL do
+    // Hibernate 6 mapeia @Enumerated(STRING) pra um ENUM(...) nativo do MySQL, cuja
+    // lista de valores fica congelada na criação da coluna -- ddl-auto:update nunca
+    // altera esse ENUM quando StatusEspecieAtual ganha uma constante nova (só cria
+    // tabela/coluna ausente), então gravar o valor novo falhava com "Data truncated
+    // for column 'status_especie_atual'". VARCHAR aceita qualquer string dentro do
+    // tamanho, sem esse problema.
     @Enumerated(EnumType.STRING)
-    @Column(name = "status_especie_atual", nullable = false)
+    @Column(name = "status_especie_atual", columnDefinition = "varchar(40)", nullable = false)
     private StatusEspecieAtual statusEspecieAtual;
 }

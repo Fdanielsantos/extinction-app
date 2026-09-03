@@ -47,6 +47,11 @@ interface ApiErrorBody {
   details?: string[];
 }
 
+// Sem isso, um `fetch` contra um host inalcançável (IP errado, backend fora do
+// ar, celular fora da rede) fica pendente indefinidamente -- a UI trava num
+// spinner pra sempre, sem erro nenhum pro usuário.
+const TIMEOUT_MS = 30000;
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { ...(options.headers as Record<string, string>) };
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
@@ -57,7 +62,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.Authorization = `Bearer ${authToken}`;
   }
 
-  const resposta = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let resposta: Response;
+  try {
+    resposta = await fetch(`${API_BASE_URL}${path}`, { ...options, headers, signal: controller.signal });
+  } catch (erro) {
+    if (erro instanceof Error && erro.name === 'AbortError') {
+      throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+    }
+    throw erro;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!resposta.ok) {
     const corpo: ApiErrorBody | null = await resposta.json().catch(() => null);

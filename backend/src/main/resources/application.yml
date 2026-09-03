@@ -28,6 +28,23 @@ server:
 
 app:
   upload-dir: ${UPLOAD_DIR:uploads}
+  ml:
+    # Caminho pra pasta gerada por ml/scripts/train_model.py (contém saved_model/ e
+    # synset.txt). Default assume que o backend roda com cwd em backend/ (mvn
+    # spring-boot:run, IDE) -- via Docker Compose isso é sobrescrito por MODEL_DIR
+    # apontando pro bind mount de ../ml/model (ver backend/docker-compose.yml).
+    model-dir: ${MODEL_DIR:../ml/model}
+  identificacao:
+    # Confiança mínima (%) pra uma predição do modelo virar candidata de espécie;
+    # abaixo disso a resposta do RF018 vem vazia ("espécie não identificada"). O
+    # modelo atual tem val_accuracy ~32% / val_top5_acc ~49% em ~11 mil classes
+    # (ver ml/model/training_log.csv) -- com esse número de classes a
+    # probabilidade do softmax fica bem diluída, então mesmo acertos ficam
+    # tipicamente na faixa de 20-45% de confiança (ver exemplo real checado em
+    # debug: classe correta em 2º lugar com 30.27%) -- 50% descartava quase
+    # tudo, inclusive imagens do próprio conjunto de treino. Ajuste conforme o
+    # treino evoluir.
+    confianca-minima: ${CONFIANCA_MINIMA_IDENTIFICACAO:20}
 
 management:
   endpoints:

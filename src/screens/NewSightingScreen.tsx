@@ -55,10 +55,18 @@ export default function NewSightingScreen() {
       setEtapa('classificando');
       setPredicoes([]);
       setEspecieSelecionadaId(null);
-      const resultado = await classificarImagem(novasUris[0]);
-      setPredicoes(resultado);
-      if (resultado.length > 0) setEspecieSelecionadaId(resultado[0].especie.id);
-      setEtapa('concluida');
+      try {
+        const resultado = await classificarImagem(novasUris[0]);
+        setPredicoes(resultado);
+        if (resultado.length > 0) setEspecieSelecionadaId(resultado[0].especie.id);
+      } catch (erro) {
+        Alert.alert(
+          'Falha ao identificar espécie',
+          erro instanceof Error ? erro.message : 'Tente novamente.'
+        );
+      } finally {
+        setEtapa('concluida');
+      }
     }
   };
 
@@ -248,6 +256,15 @@ export default function NewSightingScreen() {
               </TouchableOpacity>
             );
           })}
+        </View>
+      )}
+
+      {etapa === 'concluida' && predicoes.length === 0 && (
+        <View style={styles.predicoes}>
+          <Text style={styles.secaoTitulo}>Espécie não identificada</Text>
+          <Text style={styles.secaoSubtitulo}>
+            Não conseguimos reconhecer a espécie com confiança suficiente nessa foto.
+          </Text>
         </View>
       )}
 

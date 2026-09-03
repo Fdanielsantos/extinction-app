@@ -1,8 +1,13 @@
 package com.extinction.api.config;
 
+import com.extinction.api.exception.ApiError;
 import com.extinction.api.security.JwtAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -35,9 +40,11 @@ public class SecurityConfig {
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ObjectMapper objectMapper;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, ObjectMapper objectMapper) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.objectMapper = objectMapper;
     }
 
     @Bean
@@ -48,9 +55,29 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(handling -> handling
+                        // Rejeições do Spring Security (token ausente/inválido/expirado, ou usuário
+                        // autenticado sem permissão) não passam pelo GlobalExceptionHandler -- sem
+                        // isso o cliente recebe um 401/403 com corpo vazio, e a mensagem de erro que
+                        // chega no app fica genérica demais pra dar pista do que aconteceu.
+                        .authenticationEntryPoint((request, response, ex) ->
+                                writeApiError(response, HttpStatus.UNAUTHORIZED,
+                                        "Sessão expirada ou inválida. Faça login novamente."))
+                        .accessDeniedHandler((request, response, ex) ->
+                                writeApiError(response, HttpStatus.FORBIDDEN,
+                                        "Você não tem permissão para acessar este recurso.")))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private void writeApiError(
+            jakarta.servlet.http.HttpServletResponse response, HttpStatus status, String message
+    ) throws IOException {
+        response.setStatus(status.value());
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getWriter(), ApiError.of(status.value(), message));
     }
 
     @Bean

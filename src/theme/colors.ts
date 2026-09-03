@@ -9,6 +9,7 @@ export const colors = {
   border: '#DDE3D9',
   danger: '#C0392B',
   statusColors: {
+    NAO_AVALIADO: '#8A8F87',
     POUCO_PREOCUPANTE: '#4C9A2A',
     QUASE_AMEACADA: '#A3B518',
     VULNERAVEL: '#E0B02C',
@@ -20,6 +21,7 @@ export const colors = {
 };
 
 export const statusLabels: Record<string, string> = {
+  NAO_AVALIADO: 'Não avaliado',
   POUCO_PREOCUPANTE: 'Pouco preocupante',
   QUASE_AMEACADA: 'Quase ameaçada',
   VULNERAVEL: 'Vulnerável',

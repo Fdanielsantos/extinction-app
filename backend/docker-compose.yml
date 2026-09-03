@@ -28,11 +28,16 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/extinction?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USER: extinction
       DB_PASSWORD: extinction
+      MODEL_DIR: /app/ml-model
     ports:
       - "8080:8080"
     volumes:
       - uploads_data:/app/uploads
       - djl_cache_data:/root/.djl.ai
+      # Modelo treinado (RF018) -- bind mount em vez de COPY na imagem: os arquivos
+      # já vêm versionados via Git LFS em ../ml/model (ver ml/README.md), montar é
+      # mais rápido que rebuildar a imagem toda vez que o modelo for retreinado.
+      - ../ml/model:/app/ml-model:ro
 
 volumes:
   mysql_data:

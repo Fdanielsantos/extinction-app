@@ -4,6 +4,7 @@
 export type TipoDaConta = 'COMUM' | 'CIENTISTA' | 'ADMIN';
 
 export type StatusEspecieAtual =
+  | 'NAO_AVALIADO'
   | 'POUCO_PREOCUPANTE'
   | 'QUASE_AMEACADA'
   | 'VULNERAVEL'

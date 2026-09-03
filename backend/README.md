@@ -93,30 +93,37 @@ a pasta de upload é persistida no volume `uploads_data`. Limite de tamanho: 10M
 ## Reconhecimento de imagem (RF018) — DJL + TensorFlow
 
 `ai/TFmodel.java` implementa `SpeciesIdentificationPort` usando **DJL com engine TensorFlow**,
-conforme a seção 2 da recomendação de backend. Hoje carrega um **ResNet50 genérico pré-treinado
-no ImageNet** (resolvido automaticamente pelo model zoo do próprio DJL, sem precisar hospedar
-nenhum arquivo de modelo manualmente).
+carregando o **SavedModel treinado de verdade** por `ml/scripts/train_model.py` (transfer
+learning sobre MobileNetV2, ~11 mil espécies do GBIF — ver `ml/README.md`). Não é mais o
+ResNet50 genérico do model zoo do DJL nem um mapeamento fixo de 3 rótulos do ImageNet.
 
-**Isso não é um modelo treinado nas espécies do catálogo** — treinar isso de verdade exige
-curadoria de dataset (GBIF/iNaturalist) + treino em Python (local, ver `ml/scripts/train_model.py`), fora do escopo do que dá pra
-fazer direto no backend Java (ver seção 6 da recomendação). Por isso, hoje só 3 rótulos do
-ImageNet têm mapeamento pro catálogo (`ROTULOS_IMAGENET` em `TFmodel.java`):
+- **Onde o modelo mora:** `ml/model/` (versionado via Git LFS — `saved_model/` e `synset.txt`
+  são os únicos artefatos que importam pra inferência; `checkpoint_*.keras` só servem pra
+  retomar treino). `TFmodel` lê o caminho de `app.ml.model-dir` (`MODEL_DIR` como env var):
+  default `../ml/model` (assume cwd em `backend/`, cobre `mvn spring-boot:run`); via Docker
+  Compose isso é sobrescrito por um bind mount (`../ml/model:/app/ml-model:ro` em
+  `docker-compose.yml`) — o modelo **não** é copiado pra dentro da imagem.
+- **Pré-processamento:** `SpeciesClassifierTranslator` replica exatamente o que
+  `train_model.py` faz (resize 224×224, reescala pra `[-1, 1]`, layout HWC/channels-last —
+  **não** usa o `ToTensor()` padrão do DJL, que transporia pra CHW e quebraria a inferência
+  num SavedModel do Keras).
+- **Confiança mínima:** `app.identificacao.confianca-minima` (`CONFIANCA_MINIMA_IDENTIFICACAO`,
+  default 50%) — previsões abaixo disso são descartadas em
+  `EspecieIdentificationService`. Sem nenhuma previsão confiante, a resposta de
+  `/api/especies/inferencia` vem vazia (frontend mostra "espécie não identificada"). Ajuste
+  esse valor conforme a acurácia real do modelo evoluir (`ml/model/training_log.csv` tem o
+  histórico do treino atual: val_accuracy ~32%, val_top5_acc ~49% em ~11 mil classes).
+- **Catálogo (`Especie`):** não há mais curadoria manual prévia cobrindo as espécies
+  reconhecíveis — são ~11 mil, inviável de popular à mão. Na primeira vez que uma espécie é
+  identificada com confiança suficiente, `EspecieIdentificationService` cria a linha no
+  catálogo automaticamente (nome popular = nome científico, status
+  `NAO_AVALIADO`); identificações futuras da mesma espécie reaproveitam a linha. Curar
+  descrição/habitat/status real de uma espécie específica é um UPDATE manual nessa linha,
+  não um novo fluxo de código.
 
-| Rótulo ImageNet | Espécie do catálogo |
-|---|---|
-| "jaguar" | Onça-pintada |
-| "maned wolf" | Lobo-guará |
-| "macaw" | Arara-azul-de-lear |
-
-Mico-leão-dourado e Araucária não têm classe equivalente no ImageNet-1k — só aparecem como
-preenchimento de baixa confiança fixa (a tela de "Novo avistamento" sempre mostra 3 opções pra
-escolher, mesmo sem detecção real).
-
-**Quando houver um modelo treinado de verdade** (SavedModel exportado por `ml/scripts/train_model.py`): a troca é
-isolada dentro de `TFmodel.java` — carregar esse modelo em vez do ResNet50 do zoo, e ajustar
-`ROTULOS_IMAGENET` (ou a lógica de mapeamento, se as classes do modelo já baterem 1:1 com o
-catálogo). Nada em `EspecieController`, `EspecieIdentificationService` ou no frontend precisa
-mudar — essa é a fronteira que `SpeciesIdentificationPort` foi desenhada pra garantir.
+A troca de motor de inferência continua isolada em `TFmodel.java`/`SpeciesClassifierTranslator`
+— nada em `EspecieController` ou no frontend depende de como a inferência é feita, essa é a
+fronteira que `SpeciesIdentificationPort` foi desenhada pra garantir.
 
 A inferência roda num thread pool dedicado (`config/AsyncConfig.java`, bean
 `inferenceExecutor`), isolado das threads de request do Tomcat (seção 2.2 da recomendação).

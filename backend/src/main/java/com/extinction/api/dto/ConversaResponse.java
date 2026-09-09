@@ -11,7 +11,9 @@ public record ConversaResponse(
         TipoConversa tipo,
         String nomeExibicao,
         List<ParticipanteResponse> participantes,
-        MensagemResponse ultimaMensagem
+        MensagemResponse ultimaMensagem,
+        // Só preenchido pra GRUPO -- quem pode adicionar/remover participantes.
+        Long criadorId
 ) {
     public record ParticipanteResponse(Long id, String nome, String fotoUrl) {
         public static ParticipanteResponse from(Usuario usuario) {
@@ -33,7 +35,8 @@ public record ConversaResponse(
                 conversa.getTipo(),
                 nomeExibicao,
                 conversa.getParticipantes().stream().map(ParticipanteResponse::from).toList(),
-                ultimaMensagem
+                ultimaMensagem,
+                conversa.getCriador() != null ? conversa.getCriador().getId() : null
         );
     }
 }

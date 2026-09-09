@@ -30,6 +30,7 @@ export default function NewSightingScreen() {
   const [etapa, setEtapa] = useState<EtapaClassificacao>('ociosa');
   const [predicoes, setPredicoes] = useState<PredicaoEspecie[]>([]);
   const [especieSelecionadaId, setEspecieSelecionadaId] = useState<number | null>(null);
+  const [sugestaoEspecie, setSugestaoEspecie] = useState('');
   const [legenda, setLegenda] = useState('');
   const [publicando, setPublicando] = useState(false);
   const [seletorLocalizacaoVisivel, setSeletorLocalizacaoVisivel] = useState(false);
@@ -41,6 +42,7 @@ export default function NewSightingScreen() {
     setEtapa('ociosa');
     setPredicoes([]);
     setEspecieSelecionadaId(null);
+    setSugestaoEspecie('');
     setLegenda('');
   };
 
@@ -55,6 +57,7 @@ export default function NewSightingScreen() {
       setEtapa('classificando');
       setPredicoes([]);
       setEspecieSelecionadaId(null);
+      setSugestaoEspecie('');
       try {
         const resultado = await classificarImagem(novasUris[0]);
         setPredicoes(resultado);
@@ -154,28 +157,71 @@ export default function NewSightingScreen() {
   };
 
   const publicar = async () => {
-    // Cenário 4.3 (HU04): publicação sem título/espécie da postagem.
+    // Cenário 4.3 (HU04): publicação sem foto.
     if (fotos.length === 0) {
       Alert.alert('Selecione uma foto', 'Escolha ou tire ao menos uma foto do avistamento antes de publicar.');
       return;
     }
+
     const especieEscolhida = predicoes.find((p) => p.especie.id === especieSelecionadaId)?.especie;
-    if (!especieEscolhida) {
-      Alert.alert('Selecione a espécie', 'Confirme qual espécie identificada está correta.');
+    const sugestao = sugestaoEspecie.trim();
+
+    // RN-004 (revisada): quando o BioCLIP não identifica nenhuma espécie com
+    // confiança suficiente, o usuário pode publicar mesmo assim, digitando sua
+    // própria sugestão -- fica marcada no feed como não confirmada, em vez de
+    // travar a publicação por completo.
+    if (!especieEscolhida && !sugestao) {
+      Alert.alert(
+        'Identifique a espécie',
+        predicoes.length > 0
+          ? 'Selecione uma das espécies sugeridas ou escreva sua própria sugestão abaixo.'
+          : 'Escreva sua sugestão de espécie no campo abaixo para publicar mesmo sem identificação automática.'
+      );
       return;
     }
 
     setPublicando(true);
     try {
+      // Converte lat/long em nome de cidade/estado antes de publicar -- o backend só
+      // grava coordenadas cruas, então sem isso o feed nunca teria um lugar legível
+      // pra mostrar (ver PostCard). Geocoding reverso pode falhar (sem internet, sem
+      // resultado pro ponto) -- nesse caso publica só com as coordenadas mesmo.
+      let cidade: string | undefined;
+      let estado: string | undefined;
+      if (coordenadas) {
+        try {
+          const [resultado] = await Location.reverseGeocodeAsync(coordenadas);
+          cidade = resultado?.city ?? resultado?.subregion ?? undefined;
+          estado = resultado?.region ?? undefined;
+        } catch {
+          // Segue sem cidade/estado -- a postagem ainda tem as coordenadas.
+        }
+      }
+
       await criarPostagem({
         fotoUris: fotos,
-        legenda: legenda.trim() || `Avistamento de ${especieEscolhida.nomePopular}`,
-        especies: [especieEscolhida],
+        legenda:
+          legenda.trim() ||
+          (especieEscolhida
+            ? `Avistamento de ${especieEscolhida.nomePopular}`
+            : `Avistamento sugerido: ${sugestao}`),
+        especies: especieEscolhida ? [especieEscolhida] : [],
+        sugestaoEspecie: especieEscolhida ? undefined : sugestao,
         latitude: coordenadas?.latitude,
         longitude: coordenadas?.longitude,
+        cidade,
+        estado,
       });
       Alert.alert('Publicado!', 'Seu avistamento foi adicionado ao feed.');
       resetar();
+    } catch (erro) {
+      // Antes esse erro (rede fora do ar, validação recusada pelo backend etc.)
+      // ficava silencioso -- o spinner some (pelo finally) mas nada avisava o
+      // usuário, parecendo que a publicação simplesmente não aconteceu.
+      Alert.alert(
+        'Não foi possível publicar',
+        erro instanceof Error ? erro.message : 'Tente novamente em instantes.'
+      );
     } finally {
       setPublicando(false);
     }
@@ -263,8 +309,16 @@ export default function NewSightingScreen() {
         <View style={styles.predicoes}>
           <Text style={styles.secaoTitulo}>Espécie não identificada</Text>
           <Text style={styles.secaoSubtitulo}>
-            Não conseguimos reconhecer a espécie com confiança suficiente nessa foto.
+            Não conseguimos reconhecer a espécie com confiança suficiente nessa foto. Se
+            você souber (ou tiver uma ideia de) qual espécie é, pode sugerir abaixo — a
+            sugestão entra como não confirmada, sujeita à revisão da comunidade.
           </Text>
+          <TextInput
+            style={styles.legenda}
+            placeholder="Ex.: Lobo-guará (sua sugestão, opcional)"
+            value={sugestaoEspecie}
+            onChangeText={setSugestaoEspecie}
+          />
         </View>
       )}
 

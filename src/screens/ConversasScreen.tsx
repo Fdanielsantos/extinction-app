@@ -82,7 +82,12 @@ export default function ConversasScreen() {
             <TouchableOpacity
               style={styles.linha}
               onPress={() =>
-                navigation.navigate('Chat', { conversaId: item.id, nomeExibicao: item.nomeExibicao })
+                navigation.navigate('Chat', {
+                  conversaId: item.id,
+                  nomeExibicao: item.nomeExibicao,
+                  tipo: item.tipo,
+                  criadorId: item.criadorId,
+                })
               }
             >
               {fotoUrl ? (

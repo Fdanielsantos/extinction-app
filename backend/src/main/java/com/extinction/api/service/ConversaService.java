@@ -85,11 +85,64 @@ public class ConversaService {
         Conversa conversa = conversaRepository.save(Conversa.builder()
                 .tipo(TipoConversa.GRUPO)
                 .nome(nome)
+                .criador(usuarioLogado)
                 .criadaEm(Instant.now())
                 .participantes(participantes)
                 .build());
 
         return paraResponse(conversa, usuarioLogado);
+    }
+
+    @Transactional
+    public ConversaResponse adicionarParticipante(Long conversaId, Usuario usuarioLogado, Long novoParticipanteId) {
+        Conversa conversa = garantirGrupoEhCriador(conversaId, usuarioLogado);
+
+        Usuario novoParticipante = usuarioRepository.findById(novoParticipanteId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
+        conversa.getParticipantes().add(novoParticipante);
+        conversa = conversaRepository.save(conversa);
+
+        return paraResponse(conversa, usuarioLogado);
+    }
+
+    @Transactional
+    public ConversaResponse removerParticipante(Long conversaId, Usuario usuarioLogado, Long participanteId) {
+        Conversa conversa = garantirParticipante(conversaId, usuarioLogado);
+        if (conversa.getTipo() != TipoConversa.GRUPO) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Conversas diretas não têm participantes gerenciáveis.");
+        }
+
+        boolean ehORemovidoOProprio = participanteId.equals(usuarioLogado.getId());
+        boolean ehCriador = conversa.getCriador() != null && conversa.getCriador().getId().equals(usuarioLogado.getId());
+        // O criador remove qualquer um; qualquer outro participante só pode se
+        // auto-remover (== sair do grupo).
+        if (!ehORemovidoOProprio && !ehCriador) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Só o criador do grupo pode remover outros participantes.");
+        }
+        if (conversa.getCriador() != null && conversa.getCriador().getId().equals(participanteId)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "O criador não pode ser removido do grupo (exclua o grupo em vez disso).");
+        }
+        if (conversa.getParticipantes().size() <= 2) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Um grupo precisa de ao menos 2 participantes.");
+        }
+
+        conversa.getParticipantes().removeIf(u -> u.getId().equals(participanteId));
+        conversa = conversaRepository.save(conversa);
+
+        return paraResponse(conversa, usuarioLogado);
+    }
+
+    private Conversa garantirGrupoEhCriador(Long conversaId, Usuario usuarioLogado) {
+        Conversa conversa = garantirParticipante(conversaId, usuarioLogado);
+        if (conversa.getTipo() != TipoConversa.GRUPO) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Conversas diretas não têm participantes gerenciáveis.");
+        }
+        boolean ehCriador = conversa.getCriador() != null && conversa.getCriador().getId().equals(usuarioLogado.getId());
+        if (!ehCriador) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Só o criador do grupo pode adicionar participantes.");
+        }
+        return conversa;
     }
 
     @Transactional(readOnly = true)
@@ -101,13 +154,22 @@ public class ConversaService {
     }
 
     @Transactional
-    public MensagemResponse enviarMensagem(Long conversaId, Usuario usuarioLogado, String texto) {
+    public MensagemResponse enviarMensagem(Long conversaId, Usuario usuarioLogado, String texto, Long respostaAId) {
         Conversa conversa = garantirParticipante(conversaId, usuarioLogado);
+
+        Mensagem respostaA = null;
+        if (respostaAId != null) {
+            respostaA = mensagemRepository.findById(respostaAId)
+                    .filter(m -> m.getConversa().getId().equals(conversaId))
+                    .orElse(null);
+        }
+
         Mensagem mensagem = mensagemRepository.save(Mensagem.builder()
                 .conversa(conversa)
                 .autor(usuarioLogado)
                 .texto(texto)
                 .data(Instant.now())
+                .respostaA(respostaA)
                 .build());
         return MensagemResponse.from(mensagem);
     }

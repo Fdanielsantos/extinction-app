@@ -1,15 +1,19 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import StatusBadge from '../components/StatusBadge';
+import { MainStackParamList } from '../navigation/types';
 import { fetchFeed } from '../services/api';
 import { colors } from '../theme/colors';
 import { REGIAO_INICIAL_BRASIL } from '../theme/mapStyle';
 import { Postagem, StatusEspecieAtual } from '../types';
 import { construirHtmlMapaFeed } from '../utils/leafletMapHtml';
+
+type Navegacao = NativeStackNavigationProp<MainStackParamList>;
 
 // RF008 / HU05: filtro de mapa por espécie/nível de risco + busca por nome científico.
 const FILTROS: { label: string; status: StatusEspecieAtual | 'TODAS' }[] = [
@@ -22,6 +26,7 @@ const FILTROS: { label: string; status: StatusEspecieAtual | 'TODAS' }[] = [
 const HTML_MAPA = construirHtmlMapaFeed(REGIAO_INICIAL_BRASIL);
 
 export default function MapScreen() {
+  const navigation = useNavigation<Navegacao>();
   const [postagens, setPostagens] = useState<Postagem[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<StatusEspecieAtual | 'TODAS'>('TODAS');
   const [busca, setBusca] = useState('');
@@ -113,16 +118,42 @@ export default function MapScreen() {
       />
 
       {postagemSelecionada && (
-        <View style={styles.cartaoInfo}>
+        <TouchableOpacity
+          style={styles.cartaoInfo}
+          activeOpacity={0.85}
+          onPress={() =>
+            navigation.navigate('PerfilUsuario', { idUsuario: postagemSelecionada.idPerfil })
+          }
+        >
           <TouchableOpacity style={styles.fechar} onPress={() => setPostagemSelecionada(null)}>
             <Text style={styles.fecharTexto}>✕</Text>
           </TouchableOpacity>
-          <Text style={styles.cartaoTitulo}>
-            {postagemSelecionada.especies.map((e) => e.nomePopular).join(', ')}
-          </Text>
-          <Text style={styles.cartaoAutor}>por {postagemSelecionada.autorNome}</Text>
-          {postagemSelecionada.especies[0] && <StatusBadge status={postagemSelecionada.especies[0].statusEspecieAtual} />}
-        </View>
+          {postagemSelecionada.fotoUrls[0] && (
+            <Image source={{ uri: postagemSelecionada.fotoUrls[0] }} style={styles.cartaoFoto} />
+          )}
+          <View style={styles.cartaoConteudo}>
+            <Text style={styles.cartaoTitulo}>
+              {postagemSelecionada.identificacaoPendente
+                ? postagemSelecionada.sugestaoEspecieUsuario ?? 'Espécie não identificada'
+                : postagemSelecionada.especies.map((e) => e.nomePopular).join(', ')}
+            </Text>
+            <Text style={styles.cartaoAutor}>por {postagemSelecionada.autorNome}</Text>
+            {!!postagemSelecionada.legenda && (
+              <Text style={styles.cartaoLegenda} numberOfLines={2}>
+                {postagemSelecionada.legenda}
+              </Text>
+            )}
+            <View style={styles.cartaoRodape}>
+              {postagemSelecionada.especies[0] && (
+                <StatusBadge status={postagemSelecionada.especies[0].statusEspecieAtual} />
+              )}
+              <Text style={styles.cartaoMetrica}>♥ {postagemSelecionada.curtidas}</Text>
+              <Text style={styles.cartaoMetrica}>
+                {postagemSelecionada.comentarios.length} comentário(s)
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
       )}
     </SafeAreaView>
   );
@@ -182,23 +213,35 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     bottom: 16,
+    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 14,
-    gap: 6,
+    gap: 10,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
+  cartaoFoto: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: colors.border,
+  },
+  cartaoConteudo: {
+    flex: 1,
+    gap: 3,
+  },
   fechar: {
     position: 'absolute',
     top: 8,
     right: 10,
     padding: 4,
+    zIndex: 1,
   },
   fecharTexto: {
     color: colors.textMuted,
@@ -212,6 +255,20 @@ const styles = StyleSheet.create({
   },
   cartaoAutor: {
     fontSize: 12,
+    color: colors.textMuted,
+  },
+  cartaoLegenda: {
+    fontSize: 12,
+    color: colors.text,
+  },
+  cartaoRodape: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 2,
+  },
+  cartaoMetrica: {
+    fontSize: 11,
     color: colors.textMuted,
   },
 });

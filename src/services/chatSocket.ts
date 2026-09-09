@@ -48,9 +48,9 @@ export function desconectar(): void {
   socket = null;
 }
 
-export function enviarMensagemWs(conversaId: number, texto: string): void {
+export function enviarMensagemWs(conversaId: number, texto: string, respostaAId?: number): void {
   conectar();
-  const payload = JSON.stringify({ tipo: 'enviar', conversaId, texto });
+  const payload = JSON.stringify({ tipo: 'enviar', conversaId, texto, respostaAId });
   if (socket && socket.readyState === WebSocket.OPEN) {
     socket.send(payload);
     return;

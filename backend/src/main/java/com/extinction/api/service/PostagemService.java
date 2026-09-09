@@ -48,18 +48,37 @@ public class PostagemService {
                 .toList();
     }
 
+    private static final int SUGESTAO_ESPECIE_TAMANHO_MAXIMO = 150;
+
     @Transactional
     public PostagemResponse criar(
             Usuario usuarioLogado,
             List<MultipartFile> fotos,
             String legenda,
             List<Long> especieIds,
+            String sugestaoEspecie,
             Double latitude,
-            Double longitude
+            Double longitude,
+            String cidade,
+            String estado
     ) {
-        List<Especie> especies = especieRepository.findAllById(especieIds);
-        if (especies.isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Selecione ao menos uma espécie válida.");
+        List<Especie> especies = (especieIds == null || especieIds.isEmpty())
+                ? List.of()
+                : especieRepository.findAllById(especieIds);
+
+        // RN-004 (revisada): quando o BioCLIP não retorna nenhuma candidata acima do
+        // limiar de confiança, o usuário pode digitar sua própria sugestão em vez de
+        // ficar bloqueado. Espécie confirmada (vinda da identificação/catálogo) tem
+        // prioridade sobre a sugestão em texto -- se ambas vierem preenchidas, a
+        // sugestão é descartada (mutuamente exclusivas na Postagem).
+        String sugestao = normalizarSugestao(sugestaoEspecie);
+        if (!especies.isEmpty()) {
+            sugestao = null;
+        }
+
+        if (especies.isEmpty() && sugestao == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Selecione uma espécie identificada ou informe sua sugestão de espécie.");
         }
         if (fotos == null || fotos.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Envie ao menos uma foto do avistamento.");
@@ -68,7 +87,7 @@ public class PostagemService {
         List<String> fotoUrls = fotos.stream().map(this::salvarESerializarUrl).toList();
 
         Localidade localidade = (latitude != null && longitude != null)
-                ? Localidade.builder().latitude(latitude).longitude(longitude).build()
+                ? Localidade.builder().latitude(latitude).longitude(longitude).cidade(cidade).estado(estado).build()
                 : null;
 
         Postagem postagem = Postagem.builder()
@@ -78,10 +97,23 @@ public class PostagemService {
                 .data(Instant.now())
                 .localidade(localidade)
                 .especies(new HashSet<>(especies))
+                .sugestaoEspecieUsuario(sugestao)
                 .build();
 
         postagem = postagemRepository.save(postagem);
         return PostagemResponse.from(postagem, usuarioLogado);
+    }
+
+    private String normalizarSugestao(String sugestaoEspecie) {
+        if (sugestaoEspecie == null || sugestaoEspecie.isBlank()) {
+            return null;
+        }
+        String sugestao = sugestaoEspecie.trim();
+        if (sugestao.length() > SUGESTAO_ESPECIE_TAMANHO_MAXIMO) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "A sugestão de espécie deve ter no máximo " + SUGESTAO_ESPECIE_TAMANHO_MAXIMO + " caracteres.");
+        }
+        return sugestao;
     }
 
     private String salvarESerializarUrl(MultipartFile foto) {
@@ -90,6 +122,18 @@ public class PostagemService {
                 .path("/uploads/")
                 .path(nomeArquivo)
                 .toUriString();
+    }
+
+    @Transactional
+    public void excluir(Long postagemId, Usuario usuarioLogado) {
+        Postagem postagem = postagemRepository.findById(postagemId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Postagem não encontrada."));
+
+        if (!postagem.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Você só pode excluir suas próprias postagens.");
+        }
+
+        postagemRepository.delete(postagem);
     }
 
     @Transactional
@@ -125,5 +169,43 @@ public class PostagemService {
         comentario = comentarioRepository.save(comentario);
 
         return ComentarioResponse.from(comentario);
+    }
+
+    private Comentario buscarComentario(Long postagemId, Long comentarioId) {
+        Comentario comentario = comentarioRepository.findById(comentarioId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Comentário não encontrado."));
+        if (!comentario.getPostagem().getId().equals(postagemId)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Comentário não encontrado.");
+        }
+        return comentario;
+    }
+
+    @Transactional
+    public ComentarioResponse editarComentario(
+            Long postagemId, Long comentarioId, Usuario usuarioLogado, String descricao
+    ) {
+        Comentario comentario = buscarComentario(postagemId, comentarioId);
+        // Só o autor edita o próprio comentário -- diferente da exclusão, o dono da
+        // postagem não pode alterar o texto de um comentário alheio (moderação é
+        // "remover", não "reescrever").
+        if (!comentario.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Você só pode editar seus próprios comentários.");
+        }
+        comentario.setDescricao(descricao);
+        comentario = comentarioRepository.save(comentario);
+        return ComentarioResponse.from(comentario);
+    }
+
+    @Transactional
+    public void excluirComentario(Long postagemId, Long comentarioId, Usuario usuarioLogado) {
+        Comentario comentario = buscarComentario(postagemId, comentarioId);
+        boolean ehAutorDoComentario = comentario.getUsuario().getId().equals(usuarioLogado.getId());
+        boolean ehAutorDaPostagem = comentario.getPostagem().getUsuario().getId().equals(usuarioLogado.getId());
+        // Exclusão é permitida a quem escreveu o comentário OU a quem é dono da
+        // postagem (moderação dos próprios comentários recebidos).
+        if (!ehAutorDoComentario && !ehAutorDaPostagem) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Você não pode excluir este comentário.");
+        }
+        comentarioRepository.delete(comentario);
     }
 }

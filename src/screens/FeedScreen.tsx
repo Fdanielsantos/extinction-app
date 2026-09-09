@@ -4,7 +4,14 @@ import { FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import PostCard from '../components/PostCard';
-import { adicionarComentario, fetchFeed, toggleCurtida } from '../services/api';
+import {
+  adicionarComentario,
+  editarComentario,
+  excluirComentario,
+  excluirPostagem,
+  fetchFeed,
+  toggleCurtida,
+} from '../services/api';
 import { colors } from '../theme/colors';
 import { Postagem } from '../types';
 
@@ -61,6 +68,33 @@ export default function FeedScreen() {
     );
   };
 
+  const handleExcluir = async (id: number) => {
+    await excluirPostagem(id);
+    setPostagens((atual) => atual.filter((p) => p.id !== id));
+  };
+
+  const handleEditarComentario = async (postagemId: number, comentarioId: number, descricao: string) => {
+    const atualizado = await editarComentario(postagemId, comentarioId, descricao);
+    setPostagens((atual) =>
+      atual.map((p) =>
+        p.id === postagemId
+          ? { ...p, comentarios: p.comentarios.map((c) => (c.id === comentarioId ? atualizado : c)) }
+          : p,
+      ),
+    );
+  };
+
+  const handleExcluirComentario = async (postagemId: number, comentarioId: number) => {
+    await excluirComentario(postagemId, comentarioId);
+    setPostagens((atual) =>
+      atual.map((p) =>
+        p.id === postagemId
+          ? { ...p, comentarios: p.comentarios.filter((c) => c.id !== comentarioId) }
+          : p,
+      ),
+    );
+  };
+
   // RF013: filtro do feed por espécie (nome popular/científico) ou por usuário.
   const postagensFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -93,7 +127,14 @@ export default function FeedScreen() {
         data={postagensFiltradas}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <PostCard postagem={item} onCurtir={handleCurtir} onComentar={handleComentar} />
+          <PostCard
+            postagem={item}
+            onCurtir={handleCurtir}
+            onComentar={handleComentar}
+            onExcluir={handleExcluir}
+            onEditarComentario={handleEditarComentario}
+            onExcluirComentario={handleExcluirComentario}
+          />
         )}
         contentContainerStyle={{ paddingVertical: 12 }}
         refreshControl={<RefreshControl refreshing={atualizando} onRefresh={handleAtualizar} />}

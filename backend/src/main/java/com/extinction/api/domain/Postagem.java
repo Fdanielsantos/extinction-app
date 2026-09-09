@@ -71,6 +71,15 @@ public class Postagem {
     @Builder.Default
     private Set<Especie> especies = new HashSet<>();
 
+    // Preenchido só quando a IA (BioCLIP) não retorna nenhuma candidata acima do
+    // limiar de confiança: o usuário pode digitar seu próprio palpite em vez de
+    // ficar bloqueado sem conseguir publicar. Não vira uma Especie do catálogo
+    // automaticamente — fica como texto livre, não confirmado, até que alguém
+    // (curadoria/especialista) valide e vincule a uma Especie de verdade.
+    // Mutuamente exclusivo com `especies`: só um dos dois é preenchido por postagem.
+    @Column(name = "sugestao_especie_usuario", length = 150)
+    private String sugestaoEspecieUsuario;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "postagem_curtida",

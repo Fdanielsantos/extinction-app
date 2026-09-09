@@ -11,9 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,13 +42,25 @@ public class PostagemController {
             @AuthenticationPrincipal Usuario usuarioLogado,
             @RequestParam("fotos") List<MultipartFile> fotos,
             @RequestParam("legenda") String legenda,
-            @RequestParam("especieIds") List<Long> especieIds,
+            @RequestParam(value = "especieIds", required = false) List<Long> especieIds,
+            @RequestParam(value = "sugestaoEspecie", required = false) String sugestaoEspecie,
             @RequestParam(value = "latitude", required = false) Double latitude,
-            @RequestParam(value = "longitude", required = false) Double longitude
+            @RequestParam(value = "longitude", required = false) Double longitude,
+            @RequestParam(value = "cidade", required = false) String cidade,
+            @RequestParam(value = "estado", required = false) String estado
     ) {
         PostagemResponse postagem = postagemService.criar(
-                usuarioLogado, fotos, legenda, especieIds, latitude, longitude);
+                usuarioLogado, fotos, legenda, especieIds, sugestaoEspecie, latitude, longitude, cidade, estado);
         return ResponseEntity.status(HttpStatus.CREATED).body(postagem);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        postagemService.excluir(id, usuarioLogado);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/curtir")
@@ -65,5 +79,25 @@ public class PostagemController {
     ) {
         ComentarioResponse comentario = postagemService.comentar(id, usuarioLogado, request.descricao());
         return ResponseEntity.status(HttpStatus.CREATED).body(comentario);
+    }
+
+    @PutMapping("/{id}/comentarios/{comentarioId}")
+    public ComentarioResponse editarComentario(
+            @PathVariable Long id,
+            @PathVariable Long comentarioId,
+            @AuthenticationPrincipal Usuario usuarioLogado,
+            @Valid @RequestBody ComentarioRequest request
+    ) {
+        return postagemService.editarComentario(id, comentarioId, usuarioLogado, request.descricao());
+    }
+
+    @DeleteMapping("/{id}/comentarios/{comentarioId}")
+    public ResponseEntity<Void> excluirComentario(
+            @PathVariable Long id,
+            @PathVariable Long comentarioId,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        postagemService.excluirComentario(id, comentarioId, usuarioLogado);
+        return ResponseEntity.noContent().build();
     }
 }

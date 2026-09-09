@@ -15,6 +15,8 @@ public record PostagemResponse(
         Instant data,
         LocalidadeResponse localidade,
         List<EspecieResponse> especies,
+        String sugestaoEspecieUsuario,
+        boolean identificacaoPendente,
         int curtidas,
         boolean curtidoPeloUsuario,
         List<ComentarioResponse> comentarios
@@ -30,6 +32,8 @@ public record PostagemResponse(
                 postagem.getData(),
                 LocalidadeResponse.from(postagem.getId(), postagem.getLocalidade()),
                 postagem.getEspecies().stream().map(EspecieResponse::from).toList(),
+                postagem.getSugestaoEspecieUsuario(),
+                postagem.getEspecies().isEmpty(),
                 postagem.getCurtidasPor().size(),
                 postagem.getCurtidasPor().stream().anyMatch(u -> u.getId().equals(usuarioLogado.getId())),
                 postagem.getComentarios().stream().map(ComentarioResponse::from).toList()

@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 
 import ChatScreen from '../screens/ChatScreen';
 import ConversasScreen from '../screens/ConversasScreen';
+import EditarGrupoScreen from '../screens/EditarGrupoScreen';
 import EditarPerfilScreen from '../screens/EditarPerfilScreen';
 import EncyclopediaScreen from '../screens/EncyclopediaScreen';
 import FeedScreen from '../screens/FeedScreen';
@@ -80,6 +81,7 @@ export default function MainNavigator() {
       <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} options={{ title: 'Editar perfil' }} />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
       <Stack.Screen name="NovoGrupo" component={NovoGrupoScreen} options={{ title: 'Novo grupo' }} />
+      <Stack.Screen name="EditarGrupo" component={EditarGrupoScreen} options={{ title: 'Gerenciar grupo' }} />
     </Stack.Navigator>
   );
 }

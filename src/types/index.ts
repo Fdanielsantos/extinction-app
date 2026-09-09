@@ -76,12 +76,19 @@ export interface Postagem {
   data: string; // ISO date
   localidade?: Localidade;
   especies: Especie[];
+  // Preenchido só quando nenhuma espécie foi confirmada (ver `identificacaoPendente`):
+  // palpite em texto livre do próprio usuário, ainda não validado.
+  sugestaoEspecieUsuario?: string;
+  // true quando `especies` está vazio -- a postagem não tem nenhuma espécie
+  // confirmada, só (talvez) uma sugestão do usuário em `sugestaoEspecieUsuario`.
+  identificacaoPendente: boolean;
   curtidas: number;
   curtidoPeloUsuario: boolean;
   comentarios: Comentario[];
 }
 
-// Resultado mockado do futuro RF018 (Executar Inferência de Imagem via TensorFlow no backend).
+// RF018 (Executar Inferência de Imagem): resultado da identificação automática de
+// espécie via BioCLIP, rodando no servidor.
 export interface PredicaoEspecie {
   especie: Especie;
   confiancaPercentual: number;
@@ -110,6 +117,14 @@ export interface UsuarioPublico {
 // RF: chats diretos e em grupo entre usuários.
 export type TipoConversa = 'DIRETA' | 'GRUPO';
 
+// Resumo da mensagem original, presente só quando esta mensagem é uma
+// resposta a outra (gesto de "arrastar pro lado" no chat).
+export interface RespostaMensagem {
+  id: number;
+  autorNome: string;
+  texto: string;
+}
+
 export interface Mensagem {
   id: number;
   conversaId: number;
@@ -117,6 +132,7 @@ export interface Mensagem {
   autorNome: string;
   texto: string;
   data: string; // ISO date
+  respostaA?: RespostaMensagem;
 }
 
 export interface ParticipanteConversa {
@@ -131,4 +147,6 @@ export interface Conversa {
   nomeExibicao: string;
   participantes: ParticipanteConversa[];
   ultimaMensagem?: Mensagem;
+  // Só preenchido pra GRUPO -- quem pode adicionar/remover participantes.
+  criadorId?: number;
 }

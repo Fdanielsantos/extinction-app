@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.HashSet;
@@ -46,6 +47,13 @@ public class Conversa {
 
     /** Só preenchido pra conversas em GRUPO. */
     private String nome;
+
+    // Só preenchido pra conversas em GRUPO -- é quem pode adicionar/remover
+    // outros participantes (ver ConversaService.adicionarParticipante/removerParticipante).
+    // Conversa DIRETA não tem noção de admin, os 2 participantes são simétricos.
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "criador_id")
+    private Usuario criador;
 
     @Column(name = "criada_em", nullable = false)
     private Instant criadaEm;

@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,5 +62,23 @@ public class ConversaController {
             @AuthenticationPrincipal Usuario usuarioLogado
     ) {
         return conversaService.listarMensagens(id, usuarioLogado);
+    }
+
+    @PostMapping("/{id}/participantes/{usuarioId}")
+    public ConversaResponse adicionarParticipante(
+            @PathVariable Long id,
+            @PathVariable Long usuarioId,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        return conversaService.adicionarParticipante(id, usuarioLogado, usuarioId);
+    }
+
+    @DeleteMapping("/{id}/participantes/{usuarioId}")
+    public ConversaResponse removerParticipante(
+            @PathVariable Long id,
+            @PathVariable Long usuarioId,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        return conversaService.removerParticipante(id, usuarioLogado, usuarioId);
     }
 }

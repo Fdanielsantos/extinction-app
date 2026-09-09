@@ -18,6 +18,7 @@ export type MainStackParamList = {
   PerfilUsuario: { idUsuario: number };
   Seguidores: undefined;
   EditarPerfil: undefined;
-  Chat: { conversaId: number; nomeExibicao: string };
+  Chat: { conversaId: number; nomeExibicao: string; tipo: 'DIRETA' | 'GRUPO'; criadorId?: number };
   NovoGrupo: undefined;
+  EditarGrupo: { conversaId: number };
 };

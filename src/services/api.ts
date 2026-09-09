@@ -192,14 +192,36 @@ export async function adicionarComentario(postagemId: number, descricao: string)
   });
 }
 
+export async function editarComentario(
+  postagemId: number,
+  comentarioId: number,
+  descricao: string
+): Promise<Comentario> {
+  return request<Comentario>(`/api/postagens/${postagemId}/comentarios/${comentarioId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ descricao }),
+  });
+}
+
+export async function excluirComentario(postagemId: number, comentarioId: number): Promise<void> {
+  return request<void>(`/api/postagens/${postagemId}/comentarios/${comentarioId}`, { method: 'DELETE' });
+}
+
 // ---- RF011 / RF016 / HU04: Criar avistamento ----
 
 export interface CriarPostagemInput {
   fotoUris: string[];
   legenda: string;
+  // Vazio quando o BioCLIP não identificou nenhuma espécie com confiança
+  // suficiente -- nesse caso, `sugestaoEspecie` deve vir preenchido no lugar.
   especies: Especie[];
+  sugestaoEspecie?: string;
   latitude?: number;
   longitude?: number;
+  // Resolvidos por geocodificação reversa no dispositivo (ver NewSightingScreen) --
+  // o backend só grava coordenadas cruas, não sabe transformar lat/long em nome de lugar.
+  cidade?: string;
+  estado?: string;
 }
 
 export async function criarPostagem(input: CriarPostagemInput): Promise<Postagem> {
@@ -213,13 +235,20 @@ export async function criarPostagem(input: CriarPostagemInput): Promise<Postagem
   });
   formData.append('legenda', input.legenda);
   input.especies.forEach((especie) => formData.append('especieIds', String(especie.id)));
+  if (input.sugestaoEspecie) formData.append('sugestaoEspecie', input.sugestaoEspecie);
   if (input.latitude != null) formData.append('latitude', String(input.latitude));
   if (input.longitude != null) formData.append('longitude', String(input.longitude));
+  if (input.cidade) formData.append('cidade', input.cidade);
+  if (input.estado) formData.append('estado', input.estado);
 
   return request<Postagem>('/api/postagens', {
     method: 'POST',
     body: formData,
   });
+}
+
+export async function excluirPostagem(postagemId: number): Promise<void> {
+  return request<void>(`/api/postagens/${postagemId}`, { method: 'DELETE' });
 }
 
 // ---- RF018: Executar Inferência de Imagem ----
@@ -309,4 +338,12 @@ export async function criarGrupo(nome: string, participanteIds: number[]): Promi
 
 export async function fetchMensagens(conversaId: number): Promise<Mensagem[]> {
   return request<Mensagem[]>(`/api/conversas/${conversaId}/mensagens`);
+}
+
+export async function adicionarParticipante(conversaId: number, usuarioId: number): Promise<Conversa> {
+  return request<Conversa>(`/api/conversas/${conversaId}/participantes/${usuarioId}`, { method: 'POST' });
+}
+
+export async function removerParticipante(conversaId: number, usuarioId: number): Promise<Conversa> {
+  return request<Conversa>(`/api/conversas/${conversaId}/participantes/${usuarioId}`, { method: 'DELETE' });
 }

@@ -56,7 +56,12 @@ export default function NovoGrupoScreen() {
     setCriando(true);
     try {
       const conversa = await criarGrupo(nome.trim(), Array.from(selecionados));
-      navigation.replace('Chat', { conversaId: conversa.id, nomeExibicao: conversa.nomeExibicao });
+      navigation.replace('Chat', {
+        conversaId: conversa.id,
+        nomeExibicao: conversa.nomeExibicao,
+        tipo: conversa.tipo,
+        criadorId: conversa.criadorId,
+      });
     } finally {
       setCriando(false);
     }

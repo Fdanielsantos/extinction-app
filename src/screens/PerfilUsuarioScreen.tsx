@@ -10,6 +10,9 @@ import { MainStackParamList } from '../navigation/types';
 import {
   adicionarComentario,
   alternarSeguir,
+  editarComentario,
+  excluirComentario,
+  excluirPostagem,
   fetchFeed,
   fetchUsuarioPublico,
   obterOuCriarConversaDireta,
@@ -57,7 +60,12 @@ export default function PerfilUsuarioScreen() {
     setAbrindoChat(true);
     try {
       const conversa = await obterOuCriarConversaDireta(idUsuario);
-      navigation.navigate('Chat', { conversaId: conversa.id, nomeExibicao: conversa.nomeExibicao });
+      navigation.navigate('Chat', {
+        conversaId: conversa.id,
+        nomeExibicao: conversa.nomeExibicao,
+        tipo: conversa.tipo,
+        criadorId: conversa.criadorId,
+      });
     } finally {
       setAbrindoChat(false);
     }
@@ -82,6 +90,33 @@ export default function PerfilUsuarioScreen() {
     );
   };
 
+  const handleExcluir = async (id: number) => {
+    await excluirPostagem(id);
+    setPostagens((atual) => atual.filter((p) => p.id !== id));
+  };
+
+  const handleEditarComentario = async (postagemId: number, comentarioId: number, descricao: string) => {
+    const atualizado = await editarComentario(postagemId, comentarioId, descricao);
+    setPostagens((atual) =>
+      atual.map((p) =>
+        p.id === postagemId
+          ? { ...p, comentarios: p.comentarios.map((c) => (c.id === comentarioId ? atualizado : c)) }
+          : p,
+      ),
+    );
+  };
+
+  const handleExcluirComentario = async (postagemId: number, comentarioId: number) => {
+    await excluirComentario(postagemId, comentarioId);
+    setPostagens((atual) =>
+      atual.map((p) =>
+        p.id === postagemId
+          ? { ...p, comentarios: p.comentarios.filter((c) => c.id !== comentarioId) }
+          : p,
+      ),
+    );
+  };
+
   if (carregando || !usuarioPublico) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -102,7 +137,14 @@ export default function PerfilUsuarioScreen() {
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{ paddingVertical: 12 }}
         renderItem={({ item }) => (
-          <PostCard postagem={item} onCurtir={handleCurtir} onComentar={handleComentar} />
+          <PostCard
+            postagem={item}
+            onCurtir={handleCurtir}
+            onComentar={handleComentar}
+            onExcluir={handleExcluir}
+            onEditarComentario={handleEditarComentario}
+            onExcluirComentario={handleExcluirComentario}
+          />
         )}
         ListHeaderComponent={
           <View style={styles.cabecalho}>

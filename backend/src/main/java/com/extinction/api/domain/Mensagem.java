@@ -42,4 +42,11 @@ public class Mensagem {
 
     @Column(nullable = false)
     private Instant data;
+
+    // Auto-relacionamento opcional -- permite responder a uma mensagem específica
+    // da mesma conversa (gesto de "arrastar pro lado" no app). Sem tabela extra:
+    // é só uma referência de mensagem pra mensagem.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "resposta_a_id")
+    private Mensagem respostaA;
 }

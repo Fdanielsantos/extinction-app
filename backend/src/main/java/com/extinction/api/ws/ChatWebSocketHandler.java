@@ -24,7 +24,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
  * de consumir de um `WebSocket` nativo do React Native do que carregar um
  * cliente STOMP lá).
  *
- * Cliente → servidor: {@code {"tipo":"enviar","conversaId":1,"texto":"oi"}}
+ * Cliente → servidor: {@code {"tipo":"enviar","conversaId":1,"texto":"oi","respostaAId":5}}
+ * ({@code respostaAId} é opcional -- omitido quando a mensagem não é uma resposta)
  * Servidor → cliente: {@code {"tipo":"mensagem","mensagem":{...}}} (broadcast
  * pra todos os participantes da conversa, incluindo quem mandou) ou
  * {@code {"tipo":"erro","mensagem":"..."}}.
@@ -77,13 +78,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long conversaId = payload.path("conversaId").asLong();
         String texto = payload.path("texto").asText("").trim();
         if (texto.isEmpty()) return;
+        Long respostaAId = payload.hasNonNull("respostaAId") ? payload.path("respostaAId").asLong() : null;
 
         Usuario autor = usuarioRepository.findById(usuarioId).orElse(null);
         if (autor == null) return;
 
         MensagemResponse mensagem;
         try {
-            mensagem = conversaService.enviarMensagem(conversaId, autor, texto);
+            mensagem = conversaService.enviarMensagem(conversaId, autor, texto, respostaAId);
         } catch (ApiException e) {
             enviarErro(session, e.getMessage());
             return;

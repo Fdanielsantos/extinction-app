@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Defs_ASIS_02_Validacao_Identificacao" targetNamespace="http://extinction/bpmn" exporter="Extinction BPMN" exporterVersion="2.0">
+  <bpmn:collaboration id="Collab_ASIS_02_Validacao_Identificacao"><bpmn:participant id="Pool_ASIS_02_Validacao_Identificacao" name="Extinction — Validação de identificação (AS-IS)" processRef="Process_ASIS_02_Validacao_Identificacao"/></bpmn:collaboration>
+  <bpmn:process id="Process_ASIS_02_Validacao_Identificacao" name="AS-IS 02 — Validar identificação de espécie" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_ASIS_02_Validacao_Identificacao">
+      <bpmn:lane id="Lane_ASIS_02_Validacao_Identificacao_E" name="Especialista (biólogo)"><bpmn:flowNodeRef>s</bpmn:flowNodeRef><bpmn:flowNodeRef>e1</bpmn:flowNodeRef><bpmn:flowNodeRef>e2</bpmn:flowNodeRef><bpmn:flowNodeRef>eg</bpmn:flowNodeRef><bpmn:flowNodeRef>eend</bpmn:flowNodeRef><bpmn:flowNodeRef>e3</bpmn:flowNodeRef><bpmn:flowNodeRef>e4</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_ASIS_02_Validacao_Identificacao_S" name="Aplicativo / Backend"><bpmn:flowNodeRef>s1</bpmn:flowNodeRef><bpmn:flowNodeRef>bs1</bpmn:flowNodeRef><bpmn:flowNodeRef>s2</bpmn:flowNodeRef><bpmn:flowNodeRef>s3</bpmn:flowNodeRef><bpmn:flowNodeRef>s4</bpmn:flowNodeRef><bpmn:flowNodeRef>bs4</bpmn:flowNodeRef><bpmn:flowNodeRef>s5</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_ASIS_02_Validacao_Identificacao_U" name="Autor do avistamento"><bpmn:flowNodeRef>ug1</bpmn:flowNodeRef><bpmn:flowNodeRef>uend</bpmn:flowNodeRef><bpmn:flowNodeRef>ug2</bpmn:flowNodeRef><bpmn:flowNodeRef>u3</bpmn:flowNodeRef><bpmn:flowNodeRef>u2</bpmn:flowNodeRef><bpmn:flowNodeRef>uend2</bpmn:flowNodeRef><bpmn:flowNodeRef>u4</bpmn:flowNodeRef><bpmn:flowNodeRef>u5</bpmn:flowNodeRef><bpmn:flowNodeRef>uend3</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_ASIS_02_Validacao_Identificacao_D" name="Equipe de desenvolvimento"><bpmn:flowNodeRef>ds</bpmn:flowNodeRef><bpmn:flowNodeRef>d1</bpmn:flowNodeRef><bpmn:flowNodeRef>d2</bpmn:flowNodeRef><bpmn:flowNodeRef>d3</bpmn:flowNodeRef><bpmn:flowNodeRef>d4</bpmn:flowNodeRef><bpmn:flowNodeRef>dg</bpmn:flowNodeRef><bpmn:flowNodeRef>d5</bpmn:flowNodeRef><bpmn:flowNodeRef>d6</bpmn:flowNodeRef><bpmn:flowNodeRef>dg2</bpmn:flowNodeRef><bpmn:flowNodeRef>dend</bpmn:flowNodeRef></bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s" name="Abre o feed (sem aviso de pendências)"><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_0</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="e1" name="Atualizar e rolar o feed"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_0</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_1</bpmn:outgoing></bpmn:userTask>
+    <bpmn:manualTask id="e2" name="Analisar foto, espécie e selo da postagem"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_1</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_2</bpmn:outgoing></bpmn:manualTask>
+    <bpmn:exclusiveGateway id="eg" name="Identificação correta?"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_2</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_3</bpmn:outgoing><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_4</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:endEvent id="eend" name="Segue navegando (análise não registrada)"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_3</bpmn:incoming></bpmn:endEvent>
+    <bpmn:userTask id="e3" name="Abrir comentários e escrever a espécie correta"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_4</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_5</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="e4" name="Tocar &quot;Enviar&quot;"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_5</bpmn:incoming><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_9</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_6</bpmn:outgoing></bpmn:userTask>
+    <bpmn:serviceTask id="s1" name="Gravar o comentário"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_6</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_7</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:boundaryEvent id="bs1" name="Falha no envio" attachedToRef="s1"><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_8</bpmn:outgoing><bpmn:errorEventDefinition/></bpmn:boundaryEvent>
+    <bpmn:serviceTask id="s2" name="Exibir erro e manter o texto no campo"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_8</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_9</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="s3" name="Exibir o comentário na postagem (autor não é notificado)"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_7</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_10</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="ug1" name="Autor abre a postagem e vê o comentário?"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_10</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_11</bpmn:outgoing><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_12</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:endEvent id="uend" name="Identificação errada permanece no feed e no mapa"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_11</bpmn:incoming></bpmn:endEvent>
+    <bpmn:exclusiveGateway id="ug2" name="Concorda com a correção?"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_12</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_13</bpmn:outgoing><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_14</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="u3" name="Excluir a postagem e confirmar o aviso"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_13</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_16</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="u2" name="Manter a postagem (pode responder ou excluir o comentário)"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_14</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_15</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="uend2" name="Identificação original mantida"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_15</bpmn:incoming></bpmn:endEvent>
+    <bpmn:serviceTask id="s4" name="Excluir a postagem com fotos, curtidas e comentários"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_16</bpmn:incoming><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_19</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_20</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:boundaryEvent id="bs4" name="Falha na exclusão" attachedToRef="s4"><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_17</bpmn:outgoing><bpmn:errorEventDefinition/></bpmn:boundaryEvent>
+    <bpmn:serviceTask id="s5" name="Exibir &quot;Não foi possível excluir&quot;"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_17</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_18</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:userTask id="u4" name="Tocar para excluir novamente"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_18</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_19</bpmn:outgoing></bpmn:userTask>
+    <bpmn:callActivity id="u5" name="Registrar o avistamento de novo (AS-IS 01)"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_20</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_21</bpmn:outgoing></bpmn:callActivity>
+    <bpmn:endEvent id="uend3" name="Nova postagem, sem as curtidas e os comentários anteriores"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_21</bpmn:incoming></bpmn:endEvent>
+    <bpmn:startEvent id="ds" name="Sem periodicidade definida"><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_22</bpmn:outgoing><bpmn:timerEventDefinition/></bpmn:startEvent>
+    <bpmn:manualTask id="d1" name="Acessar o banco MySQL de produção"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_22</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_23</bpmn:outgoing></bpmn:manualTask>
+    <bpmn:manualTask id="d2" name="Listar as espécies com status NE"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_23</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_24</bpmn:outgoing></bpmn:manualTask>
+    <bpmn:manualTask id="d3" name="Pesquisar nome popular e status na IUCN/MMA"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_24</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_25</bpmn:outgoing></bpmn:manualTask>
+    <bpmn:manualTask id="d4" name="Executar o UPDATE via SQL"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_25</bpmn:incoming><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_28</bpmn:incoming><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_32</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_26</bpmn:outgoing></bpmn:manualTask>
+    <bpmn:exclusiveGateway id="dg" name="Comando executado sem erro?"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_26</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_27</bpmn:outgoing><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_29</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:manualTask id="d5" name="Corrigir o comando SQL"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_27</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_28</bpmn:outgoing></bpmn:manualTask>
+    <bpmn:manualTask id="d6" name="Conferir a espécie no aplicativo"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_29</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_30</bpmn:outgoing></bpmn:manualTask>
+    <bpmn:exclusiveGateway id="dg2" name="Dados corretos no app?"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_30</bpmn:incoming><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_31</bpmn:outgoing><bpmn:outgoing>Flow_ASIS_02_Validacao_Identificacao_32</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:endEvent id="dend" name="Catálogo parcialmente curado"><bpmn:incoming>Flow_ASIS_02_Validacao_Identificacao_31</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_0" sourceRef="s" targetRef="e1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_1" sourceRef="e1" targetRef="e2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_2" sourceRef="e2" targetRef="eg"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_3" name="Sim" sourceRef="eg" targetRef="eend"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_4" name="Não" sourceRef="eg" targetRef="e3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_5" sourceRef="e3" targetRef="e4"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_6" sourceRef="e4" targetRef="s1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_7" sourceRef="s1" targetRef="s3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_8" sourceRef="bs1" targetRef="s2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_9" name="Tocar &quot;Enviar&quot; novamente" sourceRef="s2" targetRef="e4"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_10" sourceRef="s3" targetRef="ug1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_11" name="Não" sourceRef="ug1" targetRef="uend"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_12" name="Sim" sourceRef="ug1" targetRef="ug2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_13" name="Sim" sourceRef="ug2" targetRef="u3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_14" name="Não" sourceRef="ug2" targetRef="u2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_15" sourceRef="u2" targetRef="uend2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_16" sourceRef="u3" targetRef="s4"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_17" sourceRef="bs4" targetRef="s5"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_18" sourceRef="s5" targetRef="u4"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_19" name="Tentar de novo" sourceRef="u4" targetRef="s4"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_20" sourceRef="s4" targetRef="u5"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_21" sourceRef="u5" targetRef="uend3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_22" sourceRef="ds" targetRef="d1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_23" sourceRef="d1" targetRef="d2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_24" sourceRef="d2" targetRef="d3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_25" sourceRef="d3" targetRef="d4"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_26" sourceRef="d4" targetRef="dg"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_27" name="Não" sourceRef="dg" targetRef="d5"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_28" name="Reexecutar" sourceRef="d5" targetRef="d4"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_29" name="Sim" sourceRef="dg" targetRef="d6"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_30" sourceRef="d6" targetRef="dg2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_31" name="Sim" sourceRef="dg2" targetRef="dend"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_02_Validacao_Identificacao_32" name="Não: corrigir" sourceRef="dg2" targetRef="d4"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_ASIS_02_Validacao_Identificacao"><bpmndi:BPMNPlane id="Plane_ASIS_02_Validacao_Identificacao" bpmnElement="Collab_ASIS_02_Validacao_Identificacao">
+    <bpmndi:BPMNShape id="Pool_ASIS_02_Validacao_Identificacao_di" bpmnElement="Pool_ASIS_02_Validacao_Identificacao" isHorizontal="true"><dc:Bounds x="0" y="0" width="2074" height="930"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_02_Validacao_Identificacao_E_di" bpmnElement="Lane_ASIS_02_Validacao_Identificacao_E" isHorizontal="true"><dc:Bounds x="32" y="0" width="2042" height="220"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_02_Validacao_Identificacao_S_di" bpmnElement="Lane_ASIS_02_Validacao_Identificacao_S" isHorizontal="true"><dc:Bounds x="32" y="220" width="2042" height="230"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_02_Validacao_Identificacao_U_di" bpmnElement="Lane_ASIS_02_Validacao_Identificacao_U" isHorizontal="true"><dc:Bounds x="32" y="450" width="2042" height="270"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_02_Validacao_Identificacao_D_di" bpmnElement="Lane_ASIS_02_Validacao_Identificacao_D" isHorizontal="true"><dc:Bounds x="32" y="720" width="2042" height="210"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_di" bpmnElement="s"><dc:Bounds x="110" y="92" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="e1_di" bpmnElement="e1"><dc:Bounds x="196" y="72" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="e2_di" bpmnElement="e2"><dc:Bounds x="320" y="72" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="eg_di" bpmnElement="eg"><dc:Bounds x="474" y="84" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="eend_di" bpmnElement="eend"><dc:Bounds x="606" y="37" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="e3_di" bpmnElement="e3"><dc:Bounds x="568" y="117" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="e4_di" bpmnElement="e4"><dc:Bounds x="692" y="117" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s1_di" bpmnElement="s1"><dc:Bounds x="816" y="297" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="bs1_di" bpmnElement="bs1"><dc:Bounds x="824" y="355" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s2_di" bpmnElement="s2"><dc:Bounds x="940" y="367" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s3_di" bpmnElement="s3"><dc:Bounds x="1064" y="297" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ug1_di" bpmnElement="ug1"><dc:Bounds x="1218" y="559" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="uend_di" bpmnElement="uend"><dc:Bounds x="1226" y="652" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ug2_di" bpmnElement="ug2"><dc:Bounds x="1342" y="504" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u3_di" bpmnElement="u3"><dc:Bounds x="1436" y="492" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u2_di" bpmnElement="u2"><dc:Bounds x="1436" y="592" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="uend2_di" bpmnElement="uend2"><dc:Bounds x="1598" y="612" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s4_di" bpmnElement="s4"><dc:Bounds x="1560" y="297" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="bs4_di" bpmnElement="bs4"><dc:Bounds x="1568" y="355" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s5_di" bpmnElement="s5"><dc:Bounds x="1684" y="367" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u4_di" bpmnElement="u4"><dc:Bounds x="1684" y="492" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u5_di" bpmnElement="u5"><dc:Bounds x="1808" y="492" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="uend3_di" bpmnElement="uend3"><dc:Bounds x="1970" y="512" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ds_di" bpmnElement="ds"><dc:Bounds x="110" y="807" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="d1_di" bpmnElement="d1"><dc:Bounds x="196" y="787" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="d2_di" bpmnElement="d2"><dc:Bounds x="320" y="787" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="d3_di" bpmnElement="d3"><dc:Bounds x="444" y="787" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="d4_di" bpmnElement="d4"><dc:Bounds x="568" y="787" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="dg_di" bpmnElement="dg"><dc:Bounds x="722" y="799" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="d5_di" bpmnElement="d5"><dc:Bounds x="816" y="842" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="d6_di" bpmnElement="d6"><dc:Bounds x="816" y="737" width="112" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="dg2_di" bpmnElement="dg2"><dc:Bounds x="970" y="749" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="dend_di" bpmnElement="dend"><dc:Bounds x="1102" y="757" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_0_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_0"><di:waypoint x="146" y="110"/><di:waypoint x="196" y="110"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_1_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_1"><di:waypoint x="308" y="110"/><di:waypoint x="320" y="110"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_2_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_2"><di:waypoint x="432" y="110"/><di:waypoint x="474" y="110"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_3_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_3"><di:waypoint x="500" y="84"/><di:waypoint x="500" y="55"/><di:waypoint x="606" y="55"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_4_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_4"><di:waypoint x="500" y="136"/><di:waypoint x="500" y="155"/><di:waypoint x="568" y="155"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_5_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_5"><di:waypoint x="680" y="155"/><di:waypoint x="692" y="155"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_6_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_6"><di:waypoint x="804" y="155"/><di:waypoint x="810" y="155"/><di:waypoint x="810" y="335"/><di:waypoint x="816" y="335"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_7_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_7"><di:waypoint x="928" y="335"/><di:waypoint x="1064" y="335"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_8_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_8"><di:waypoint x="842" y="391"/><di:waypoint x="842" y="405"/><di:waypoint x="940" y="405"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_9_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_9"><di:waypoint x="996" y="367"/><di:waypoint x="996" y="205"/><di:waypoint x="768" y="205"/><di:waypoint x="768" y="193"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_10_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_10"><di:waypoint x="1176" y="335"/><di:waypoint x="1202" y="335"/><di:waypoint x="1202" y="585"/><di:waypoint x="1218" y="585"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_11_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_11"><di:waypoint x="1244" y="611"/><di:waypoint x="1244" y="652"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_12_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_12"><di:waypoint x="1244" y="559"/><di:waypoint x="1244" y="530"/><di:waypoint x="1342" y="530"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_13_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_13"><di:waypoint x="1394" y="530"/><di:waypoint x="1436" y="530"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_14_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_14"><di:waypoint x="1368" y="556"/><di:waypoint x="1368" y="630"/><di:waypoint x="1436" y="630"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_15_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_15"><di:waypoint x="1548" y="630"/><di:waypoint x="1598" y="630"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_16_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_16"><di:waypoint x="1548" y="530"/><di:waypoint x="1554" y="530"/><di:waypoint x="1554" y="335"/><di:waypoint x="1560" y="335"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_17_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_17"><di:waypoint x="1586" y="391"/><di:waypoint x="1586" y="405"/><di:waypoint x="1684" y="405"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_18_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_18"><di:waypoint x="1740" y="443"/><di:waypoint x="1740" y="492"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_19_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_19"><di:waypoint x="1684" y="530"/><di:waypoint x="1641" y="530"/><di:waypoint x="1641" y="373"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_20_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_20"><di:waypoint x="1672" y="335"/><di:waypoint x="1801" y="335"/><di:waypoint x="1801" y="530"/><di:waypoint x="1808" y="530"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_21_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_21"><di:waypoint x="1920" y="530"/><di:waypoint x="1970" y="530"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_22_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_22"><di:waypoint x="146" y="825"/><di:waypoint x="196" y="825"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_23_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_23"><di:waypoint x="308" y="825"/><di:waypoint x="320" y="825"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_24_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_24"><di:waypoint x="432" y="825"/><di:waypoint x="444" y="825"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_25_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_25"><di:waypoint x="556" y="825"/><di:waypoint x="568" y="825"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_26_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_26"><di:waypoint x="680" y="825"/><di:waypoint x="722" y="825"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_27_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_27"><di:waypoint x="748" y="851"/><di:waypoint x="748" y="880"/><di:waypoint x="816" y="880"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_28_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_28"><di:waypoint x="816" y="880"/><di:waypoint x="644" y="880"/><di:waypoint x="644" y="863"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_29_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_29"><di:waypoint x="748" y="799"/><di:waypoint x="748" y="775"/><di:waypoint x="816" y="775"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_30_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_30"><di:waypoint x="928" y="775"/><di:waypoint x="970" y="775"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_31_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_31"><di:waypoint x="1022" y="775"/><di:waypoint x="1102" y="775"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_02_Validacao_Identificacao_32_di" bpmnElement="Flow_ASIS_02_Validacao_Identificacao_32"><di:waypoint x="996" y="749"/><di:waypoint x="996" y="730"/><di:waypoint x="624" y="730"/><di:waypoint x="624" y="787"/></bpmndi:BPMNEdge>
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn:definitions>

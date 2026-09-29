@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Defs_TOBE_01C_Publicacao" targetNamespace="http://extinction/bpmn" exporter="Extinction BPMN" exporterVersion="2.0">
+  <bpmn:collaboration id="Collab_TOBE_01C_Publicacao"><bpmn:participant id="Pool_TOBE_01C_Publicacao" name="Extinction — Registrar avistamento (TO-BE) — Parte C: publicação" processRef="Process_TOBE_01C_Publicacao"/></bpmn:collaboration>
+  <bpmn:process id="Process_TOBE_01C_Publicacao" name="TO-BE 01.C — Publicar o avistamento" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_TOBE_01C_Publicacao">
+      <bpmn:lane id="Lane_TOBE_01C_Publicacao_U" name="Usuário (cidadão)"><bpmn:flowNodeRef>lk</bpmn:flowNodeRef><bpmn:flowNodeRef>u1</bpmn:flowNodeRef><bpmn:flowNodeRef>u2</bpmn:flowNodeRef><bpmn:flowNodeRef>u3</bpmn:flowNodeRef><bpmn:flowNodeRef>ug3</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_TOBE_01C_Publicacao_A" name="Aplicativo Extinction"><bpmn:flowNodeRef>ag1</bpmn:flowNodeRef><bpmn:flowNodeRef>a1</bpmn:flowNodeRef><bpmn:flowNodeRef>a2</bpmn:flowNodeRef><bpmn:flowNodeRef>ag2</bpmn:flowNodeRef><bpmn:flowNodeRef>a3</bpmn:flowNodeRef><bpmn:flowNodeRef>be</bpmn:flowNodeRef><bpmn:flowNodeRef>sp</bpmn:flowNodeRef><bpmn:flowNodeRef>a4</bpmn:flowNodeRef><bpmn:flowNodeRef>a5</bpmn:flowNodeRef><bpmn:flowNodeRef>e</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_TOBE_01C_Publicacao_B" name="Backend (API)"><bpmn:flowNodeRef>b1</bpmn:flowNodeRef><bpmn:flowNodeRef>bg</bpmn:flowNodeRef><bpmn:flowNodeRef>bx</bpmn:flowNodeRef><bpmn:flowNodeRef>b3</bpmn:flowNodeRef><bpmn:flowNodeRef>b5</bpmn:flowNodeRef><bpmn:flowNodeRef>bgeo</bpmn:flowNodeRef><bpmn:flowNodeRef>b6</bpmn:flowNodeRef><bpmn:flowNodeRef>b7</bpmn:flowNodeRef></bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:intermediateCatchEvent id="lk" name="Vindo de 01.B"><bpmn:outgoing>Flow_TOBE_01C_Publicacao_0</bpmn:outgoing><bpmn:linkEventDefinition name="Vindo de 01.B"/></bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="u1" name="Tocar &quot;Publicar avistamento&quot;"><bpmn:incoming>Flow_TOBE_01C_Publicacao_0</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_3</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_14</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_1</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="ag1" name="Há foto e espécie, sugestão ou identificação pendente?"><bpmn:incoming>Flow_TOBE_01C_Publicacao_1</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_2</bpmn:outgoing><bpmn:outgoing>Flow_TOBE_01C_Publicacao_4</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="a1" name="Destacar o dado que falta"><bpmn:incoming>Flow_TOBE_01C_Publicacao_2</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_3</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="a2" name="Gerar o identificador único (UUID) do registro"><bpmn:incoming>Flow_TOBE_01C_Publicacao_4</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_5</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="ag2" name="Há conexão?"><bpmn:incoming>Flow_TOBE_01C_Publicacao_5</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_6</bpmn:outgoing><bpmn:outgoing>Flow_TOBE_01C_Publicacao_7</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="a3" name="Enviar o registro com o UUID"><bpmn:incoming>Flow_TOBE_01C_Publicacao_6</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_9</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:boundaryEvent id="be" name="Falha no envio" attachedToRef="a3"><bpmn:outgoing>Flow_TOBE_01C_Publicacao_8</bpmn:outgoing><bpmn:errorEventDefinition/></bpmn:boundaryEvent>
+    <bpmn:subProcess id="sp" name="Guardar na fila local e sincronizar (01.1)"><bpmn:incoming>Flow_TOBE_01C_Publicacao_7</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_8</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_10</bpmn:outgoing></bpmn:subProcess>
+    <bpmn:serviceTask id="b1" name="Verificar UUID (sem duplicar) e validar os dados"><bpmn:incoming>Flow_TOBE_01C_Publicacao_9</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_10</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_11</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="bg" name="Dados válidos?"><bpmn:incoming>Flow_TOBE_01C_Publicacao_11</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_12</bpmn:outgoing><bpmn:outgoing>Flow_TOBE_01C_Publicacao_15</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="a4" name="Notificar o autor e destacar o que corrigir"><bpmn:incoming>Flow_TOBE_01C_Publicacao_12</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_13</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:userTask id="u2" name="Corrigir o registro"><bpmn:incoming>Flow_TOBE_01C_Publicacao_13</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_14</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="bx" name="Situação da espécie?"><bpmn:incoming>Flow_TOBE_01C_Publicacao_15</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_16</bpmn:outgoing><bpmn:outgoing>Flow_TOBE_01C_Publicacao_17</bpmn:outgoing><bpmn:outgoing>Flow_TOBE_01C_Publicacao_18</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="b3" name="Identificar com o BioCLIP e notificar o autor"><bpmn:incoming>Flow_TOBE_01C_Publicacao_18</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_19</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:userTask id="u3" name="Abrir a notificação e ver as candidatas"><bpmn:incoming>Flow_TOBE_01C_Publicacao_19</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_20</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="ug3" name="Confirmou uma candidata?"><bpmn:incoming>Flow_TOBE_01C_Publicacao_20</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_21</bpmn:outgoing><bpmn:outgoing>Flow_TOBE_01C_Publicacao_22</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="b5" name="Marcar &quot;pendente de curadoria&quot; e enviar à fila (TO-BE 02)"><bpmn:incoming>Flow_TOBE_01C_Publicacao_17</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_22</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_23</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="bgeo" name="Espécie ameaçada (CR/EN/VU) e com localização?"><bpmn:incoming>Flow_TOBE_01C_Publicacao_16</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_21</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_23</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_24</bpmn:outgoing><bpmn:outgoing>Flow_TOBE_01C_Publicacao_25</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="b6" name="Generalizar a coordenada pública (~10 km)"><bpmn:incoming>Flow_TOBE_01C_Publicacao_24</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_26</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="b7" name="Gravar e publicar no feed e no mapa (se houver local)"><bpmn:incoming>Flow_TOBE_01C_Publicacao_25</bpmn:incoming><bpmn:incoming>Flow_TOBE_01C_Publicacao_26</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_27</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="a5" name="Remover da fila (se veio dela) e exibir &quot;Publicado!&quot;"><bpmn:incoming>Flow_TOBE_01C_Publicacao_27</bpmn:incoming><bpmn:outgoing>Flow_TOBE_01C_Publicacao_28</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="e" name="Avistamento publicado"><bpmn:incoming>Flow_TOBE_01C_Publicacao_28</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_0" sourceRef="lk" targetRef="u1"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_1" sourceRef="u1" targetRef="ag1"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_2" name="Não" sourceRef="ag1" targetRef="a1"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_3" name="Completar e tentar de novo" sourceRef="a1" targetRef="u1"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_4" name="Sim" sourceRef="ag1" targetRef="a2"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_5" sourceRef="a2" targetRef="ag2"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_6" name="Sim" sourceRef="ag2" targetRef="a3"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_7" name="Não" sourceRef="ag2" targetRef="sp"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_8" sourceRef="be" targetRef="sp"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_9" sourceRef="a3" targetRef="b1"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_10" sourceRef="sp" targetRef="b1"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_11" sourceRef="b1" targetRef="bg"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_12" name="Não" sourceRef="bg" targetRef="a4"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_13" sourceRef="a4" targetRef="u2"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_14" name="Tocar &quot;Publicar&quot; novamente" sourceRef="u2" targetRef="u1"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_15" name="Sim" sourceRef="bg" targetRef="bx"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_16" name="Confirmada" sourceRef="bx" targetRef="bgeo"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_17" name="Sugestão do usuário" sourceRef="bx" targetRef="b5"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_18" name="Sem identificação (enviado offline)" sourceRef="bx" targetRef="b3"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_19" sourceRef="b3" targetRef="u3"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_20" sourceRef="u3" targetRef="ug3"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_21" name="Sim" sourceRef="ug3" targetRef="bgeo"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_22" name="Não: sugeriu outra" sourceRef="ug3" targetRef="b5"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_23" sourceRef="b5" targetRef="bgeo"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_24" name="Sim" sourceRef="bgeo" targetRef="b6"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_25" name="Não" sourceRef="bgeo" targetRef="b7"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_26" sourceRef="b6" targetRef="b7"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_27" sourceRef="b7" targetRef="a5"/>
+    <bpmn:sequenceFlow id="Flow_TOBE_01C_Publicacao_28" sourceRef="a5" targetRef="e"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_TOBE_01C_Publicacao"><bpmndi:BPMNPlane id="Plane_TOBE_01C_Publicacao" bpmnElement="Collab_TOBE_01C_Publicacao">
+    <bpmndi:BPMNShape id="Pool_TOBE_01C_Publicacao_di" bpmnElement="Pool_TOBE_01C_Publicacao" isHorizontal="true"><dc:Bounds x="0" y="0" width="2130" height="790"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_TOBE_01C_Publicacao_U_di" bpmnElement="Lane_TOBE_01C_Publicacao_U" isHorizontal="true"><dc:Bounds x="32" y="0" width="2098" height="230"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_TOBE_01C_Publicacao_A_di" bpmnElement="Lane_TOBE_01C_Publicacao_A" isHorizontal="true"><dc:Bounds x="32" y="230" width="2098" height="270"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_TOBE_01C_Publicacao_B_di" bpmnElement="Lane_TOBE_01C_Publicacao_B" isHorizontal="true"><dc:Bounds x="32" y="500" width="2098" height="290"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="lk_di" bpmnElement="lk"><dc:Bounds x="108" y="97" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u1_di" bpmnElement="u1"><dc:Bounds x="192" y="77" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ag1_di" bpmnElement="ag1"><dc:Bounds x="340" y="339" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a1_di" bpmnElement="a1"><dc:Bounds x="312" y="417" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a2_di" bpmnElement="a2"><dc:Bounds x="432" y="327" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ag2_di" bpmnElement="ag2"><dc:Bounds x="580" y="339" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a3_di" bpmnElement="a3"><dc:Bounds x="672" y="252" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="be_di" bpmnElement="be"><dc:Bounds x="680" y="310" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="sp_di" bpmnElement="sp" isExpanded="false"><dc:Bounds x="672" y="407" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b1_di" bpmnElement="b1"><dc:Bounds x="792" y="607" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="bg_di" bpmnElement="bg"><dc:Bounds x="940" y="619" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a4_di" bpmnElement="a4"><dc:Bounds x="912" y="407" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u2_di" bpmnElement="u2"><dc:Bounds x="912" y="122" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="bx_di" bpmnElement="bx"><dc:Bounds x="1060" y="619" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b3_di" bpmnElement="b3"><dc:Bounds x="1152" y="692" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u3_di" bpmnElement="u3"><dc:Bounds x="1272" y="122" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ug3_di" bpmnElement="ug3"><dc:Bounds x="1420" y="134" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b5_di" bpmnElement="b5"><dc:Bounds x="1272" y="522" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="bgeo_di" bpmnElement="bgeo"><dc:Bounds x="1540" y="619" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b6_di" bpmnElement="b6"><dc:Bounds x="1632" y="522" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b7_di" bpmnElement="b7"><dc:Bounds x="1752" y="607" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a5_di" bpmnElement="a5"><dc:Bounds x="1872" y="327" width="108" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="e_di" bpmnElement="e"><dc:Bounds x="2028" y="347" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_0_di" bpmnElement="Flow_TOBE_01C_Publicacao_0"><di:waypoint x="144" y="115"/><di:waypoint x="192" y="115"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_1_di" bpmnElement="Flow_TOBE_01C_Publicacao_1"><di:waypoint x="300" y="115"/><di:waypoint x="324" y="115"/><di:waypoint x="324" y="365"/><di:waypoint x="340" y="365"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_2_di" bpmnElement="Flow_TOBE_01C_Publicacao_2"><di:waypoint x="366" y="391"/><di:waypoint x="366" y="417"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_3_di" bpmnElement="Flow_TOBE_01C_Publicacao_3"><di:waypoint x="312" y="455"/><di:waypoint x="226" y="455"/><di:waypoint x="226" y="153"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_4_di" bpmnElement="Flow_TOBE_01C_Publicacao_4"><di:waypoint x="392" y="365"/><di:waypoint x="432" y="365"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_5_di" bpmnElement="Flow_TOBE_01C_Publicacao_5"><di:waypoint x="540" y="365"/><di:waypoint x="580" y="365"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_6_di" bpmnElement="Flow_TOBE_01C_Publicacao_6"><di:waypoint x="606" y="339"/><di:waypoint x="606" y="290"/><di:waypoint x="672" y="290"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_7_di" bpmnElement="Flow_TOBE_01C_Publicacao_7"><di:waypoint x="606" y="391"/><di:waypoint x="606" y="445"/><di:waypoint x="672" y="445"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_8_di" bpmnElement="Flow_TOBE_01C_Publicacao_8"><di:waypoint x="698" y="346"/><di:waypoint x="698" y="407"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_9_di" bpmnElement="Flow_TOBE_01C_Publicacao_9"><di:waypoint x="780" y="290"/><di:waypoint x="846" y="290"/><di:waypoint x="846" y="607"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_10_di" bpmnElement="Flow_TOBE_01C_Publicacao_10"><di:waypoint x="780" y="445"/><di:waypoint x="786" y="445"/><di:waypoint x="786" y="645"/><di:waypoint x="792" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_11_di" bpmnElement="Flow_TOBE_01C_Publicacao_11"><di:waypoint x="900" y="645"/><di:waypoint x="940" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_12_di" bpmnElement="Flow_TOBE_01C_Publicacao_12"><di:waypoint x="966" y="619"/><di:waypoint x="966" y="483"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_13_di" bpmnElement="Flow_TOBE_01C_Publicacao_13"><di:waypoint x="966" y="407"/><di:waypoint x="966" y="198"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_14_di" bpmnElement="Flow_TOBE_01C_Publicacao_14"><di:waypoint x="966" y="122"/><di:waypoint x="966" y="12"/><di:waypoint x="268" y="12"/><di:waypoint x="268" y="77"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_15_di" bpmnElement="Flow_TOBE_01C_Publicacao_15"><di:waypoint x="992" y="645"/><di:waypoint x="1060" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_16_di" bpmnElement="Flow_TOBE_01C_Publicacao_16"><di:waypoint x="1112" y="645"/><di:waypoint x="1540" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_17_di" bpmnElement="Flow_TOBE_01C_Publicacao_17"><di:waypoint x="1086" y="619"/><di:waypoint x="1086" y="560"/><di:waypoint x="1272" y="560"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_18_di" bpmnElement="Flow_TOBE_01C_Publicacao_18"><di:waypoint x="1086" y="671"/><di:waypoint x="1086" y="730"/><di:waypoint x="1152" y="730"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_19_di" bpmnElement="Flow_TOBE_01C_Publicacao_19"><di:waypoint x="1260" y="730"/><di:waypoint x="1266" y="730"/><di:waypoint x="1266" y="160"/><di:waypoint x="1272" y="160"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_20_di" bpmnElement="Flow_TOBE_01C_Publicacao_20"><di:waypoint x="1380" y="160"/><di:waypoint x="1420" y="160"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_21_di" bpmnElement="Flow_TOBE_01C_Publicacao_21"><di:waypoint x="1472" y="160"/><di:waypoint x="1524" y="160"/><di:waypoint x="1524" y="645"/><di:waypoint x="1540" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_22_di" bpmnElement="Flow_TOBE_01C_Publicacao_22"><di:waypoint x="1446" y="186"/><di:waypoint x="1446" y="560"/><di:waypoint x="1380" y="560"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_23_di" bpmnElement="Flow_TOBE_01C_Publicacao_23"><di:waypoint x="1380" y="560"/><di:waypoint x="1524" y="560"/><di:waypoint x="1524" y="645"/><di:waypoint x="1540" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_24_di" bpmnElement="Flow_TOBE_01C_Publicacao_24"><di:waypoint x="1566" y="619"/><di:waypoint x="1566" y="560"/><di:waypoint x="1632" y="560"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_25_di" bpmnElement="Flow_TOBE_01C_Publicacao_25"><di:waypoint x="1592" y="645"/><di:waypoint x="1752" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_26_di" bpmnElement="Flow_TOBE_01C_Publicacao_26"><di:waypoint x="1740" y="560"/><di:waypoint x="1746" y="560"/><di:waypoint x="1746" y="645"/><di:waypoint x="1752" y="645"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_27_di" bpmnElement="Flow_TOBE_01C_Publicacao_27"><di:waypoint x="1860" y="645"/><di:waypoint x="1866" y="645"/><di:waypoint x="1866" y="365"/><di:waypoint x="1872" y="365"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_TOBE_01C_Publicacao_28_di" bpmnElement="Flow_TOBE_01C_Publicacao_28"><di:waypoint x="1980" y="365"/><di:waypoint x="2028" y="365"/></bpmndi:BPMNEdge>
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn:definitions>

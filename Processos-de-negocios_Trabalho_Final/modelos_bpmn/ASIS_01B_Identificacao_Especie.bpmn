@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Defs_ASIS_01B_Identificacao_Especie" targetNamespace="http://extinction/bpmn" exporter="Extinction BPMN" exporterVersion="2.0">
+  <bpmn:collaboration id="Collab_ASIS_01B_Identificacao_Especie"><bpmn:participant id="Pool_ASIS_01B_Identificacao_Especie" name="Extinction — Registrar avistamento (AS-IS) — Parte B: identificação" processRef="Process_ASIS_01B_Identificacao_Especie"/></bpmn:collaboration>
+  <bpmn:process id="Process_ASIS_01B_Identificacao_Especie" name="AS-IS 01.B — Identificar a espécie" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_ASIS_01B_Identificacao_Especie">
+      <bpmn:lane id="Lane_ASIS_01B_Identificacao_Especie_U" name="Usuário (cidadão)"><bpmn:flowNodeRef>ug</bpmn:flowNodeRef><bpmn:flowNodeRef>u5</bpmn:flowNodeRef><bpmn:flowNodeRef>lkv</bpmn:flowNodeRef><bpmn:flowNodeRef>u1</bpmn:flowNodeRef><bpmn:flowNodeRef>u2</bpmn:flowNodeRef><bpmn:flowNodeRef>um</bpmn:flowNodeRef><bpmn:flowNodeRef>u3</bpmn:flowNodeRef><bpmn:flowNodeRef>lk2</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_ASIS_01B_Identificacao_Especie_A" name="Aplicativo Extinction"><bpmn:flowNodeRef>lk</bpmn:flowNodeRef><bpmn:flowNodeRef>a1</bpmn:flowNodeRef><bpmn:flowNodeRef>be</bpmn:flowNodeRef><bpmn:flowNodeRef>ae</bpmn:flowNodeRef><bpmn:flowNodeRef>ag</bpmn:flowNodeRef><bpmn:flowNodeRef>a2</bpmn:flowNodeRef><bpmn:flowNodeRef>a3</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_ASIS_01B_Identificacao_Especie_B" name="Backend (API)"><bpmn:flowNodeRef>b1</bpmn:flowNodeRef><bpmn:flowNodeRef>b2</bpmn:flowNodeRef><bpmn:flowNodeRef>b3</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_ASIS_01B_Identificacao_Especie_I" name="Serviço de IA (BioCLIP)"><bpmn:flowNodeRef>i1</bpmn:flowNodeRef></bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:intermediateCatchEvent id="lk" name="Vindo de 01.A (fotos e local definidos)"><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_0</bpmn:outgoing><bpmn:linkEventDefinition name="Vindo de 01.A (fotos e local definidos)"/></bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="a1" name="Enviar a 1ª foto para identificação"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_0</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_1</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:boundaryEvent id="be" name="Falha de rede ou do servidor" attachedToRef="a1"><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_6</bpmn:outgoing><bpmn:errorEventDefinition/></bpmn:boundaryEvent>
+    <bpmn:serviceTask id="ae" name="Exibir &quot;Falha ao identificar espécie&quot;"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_6</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_7</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="ug" name="Tentar identificar de novo?"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_7</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_8</bpmn:outgoing><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_10</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="u5" name="Remover a 1ª foto e adicioná-la de novo"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_8</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_9</bpmn:outgoing></bpmn:userTask>
+    <bpmn:intermediateThrowEvent id="lkv" name="Voltar para 01.A"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_9</bpmn:incoming><bpmn:linkEventDefinition name="Captura"/></bpmn:intermediateThrowEvent>
+    <bpmn:serviceTask id="b1" name="Receber a foto e solicitar a inferência"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_1</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_2</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="i1" name="Inferir as 5 espécies mais prováveis"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_2</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_3</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="b2" name="Descartar candidatas abaixo de 20% de confiança"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_3</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_4</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="b3" name="Criar no catálogo as espécies ausentes (status NE)"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_4</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_5</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="ag" name="Há candidatas?"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_5</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_11</bpmn:outgoing><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_12</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="a2" name="Listar candidatas e pré-selecionar a de maior confiança"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_11</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_13</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="a3" name="Exibir &quot;Espécie não identificada&quot; com campo de sugestão"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_10</bpmn:incoming><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_12</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_14</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:userTask id="u1" name="Manter ou trocar a espécie pré-selecionada"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_13</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_15</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="u2" name="Digitar uma sugestão de espécie (texto livre)"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_14</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_16</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="um" name=""><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_15</bpmn:incoming><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_16</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_17</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="u3" name="Complementar fotos (até 6) e legenda (opcional)"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_17</bpmn:incoming><bpmn:outgoing>Flow_ASIS_01B_Identificacao_Especie_18</bpmn:outgoing></bpmn:userTask>
+    <bpmn:intermediateThrowEvent id="lk2" name="Ir para 01.C (publicação)"><bpmn:incoming>Flow_ASIS_01B_Identificacao_Especie_18</bpmn:incoming><bpmn:linkEventDefinition name="Publicacao"/></bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_0" sourceRef="lk" targetRef="a1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_1" sourceRef="a1" targetRef="b1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_2" sourceRef="b1" targetRef="i1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_3" sourceRef="i1" targetRef="b2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_4" sourceRef="b2" targetRef="b3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_5" sourceRef="b3" targetRef="ag"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_6" sourceRef="be" targetRef="ae"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_7" sourceRef="ae" targetRef="ug"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_8" name="Sim" sourceRef="ug" targetRef="u5"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_9" sourceRef="u5" targetRef="lkv"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_10" name="Não: seguir sem identificação" sourceRef="ug" targetRef="a3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_11" name="Sim" sourceRef="ag" targetRef="a2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_12" name="Não" sourceRef="ag" targetRef="a3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_13" sourceRef="a2" targetRef="u1"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_14" sourceRef="a3" targetRef="u2"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_15" sourceRef="u1" targetRef="um"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_16" sourceRef="u2" targetRef="um"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_17" sourceRef="um" targetRef="u3"/>
+    <bpmn:sequenceFlow id="Flow_ASIS_01B_Identificacao_Especie_18" sourceRef="u3" targetRef="lk2"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_ASIS_01B_Identificacao_Especie"><bpmndi:BPMNPlane id="Plane_ASIS_01B_Identificacao_Especie" bpmnElement="Collab_ASIS_01B_Identificacao_Especie">
+    <bpmndi:BPMNShape id="Pool_ASIS_01B_Identificacao_Especie_di" bpmnElement="Pool_ASIS_01B_Identificacao_Especie" isHorizontal="true"><dc:Bounds x="0" y="0" width="1806" height="820"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_01B_Identificacao_Especie_U_di" bpmnElement="Lane_ASIS_01B_Identificacao_Especie_U" isHorizontal="true"><dc:Bounds x="32" y="0" width="1774" height="230"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_01B_Identificacao_Especie_A_di" bpmnElement="Lane_ASIS_01B_Identificacao_Especie_A" isHorizontal="true"><dc:Bounds x="32" y="230" width="1774" height="260"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_01B_Identificacao_Especie_B_di" bpmnElement="Lane_ASIS_01B_Identificacao_Especie_B" isHorizontal="true"><dc:Bounds x="32" y="490" width="1774" height="200"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Lane_ASIS_01B_Identificacao_Especie_I_di" bpmnElement="Lane_ASIS_01B_Identificacao_Especie_I" isHorizontal="true"><dc:Bounds x="32" y="690" width="1774" height="130"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="lk_di" bpmnElement="lk"><dc:Bounds x="114" y="342" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a1_di" bpmnElement="a1"><dc:Bounds x="204" y="322" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="be_di" bpmnElement="be"><dc:Bounds x="216" y="380" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ae_di" bpmnElement="ae"><dc:Bounds x="336" y="402" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ug_di" bpmnElement="ug"><dc:Bounds x="502" y="139" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u5_di" bpmnElement="u5"><dc:Bounds x="600" y="127" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="lkv_di" bpmnElement="lkv"><dc:Bounds x="774" y="147" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b1_di" bpmnElement="b1"><dc:Bounds x="336" y="552" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="i1_di" bpmnElement="i1"><dc:Bounds x="468" y="717" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b2_di" bpmnElement="b2"><dc:Bounds x="600" y="552" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b3_di" bpmnElement="b3"><dc:Bounds x="732" y="552" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="ag_di" bpmnElement="ag"><dc:Bounds x="898" y="334" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a2_di" bpmnElement="a2"><dc:Bounds x="996" y="257" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="a3_di" bpmnElement="a3"><dc:Bounds x="996" y="387" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u1_di" bpmnElement="u1"><dc:Bounds x="1260" y="27" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u2_di" bpmnElement="u2"><dc:Bounds x="1260" y="127" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="um_di" bpmnElement="um"><dc:Bounds x="1426" y="89" width="52" height="52"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="u3_di" bpmnElement="u3"><dc:Bounds x="1524" y="77" width="120" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="lk2_di" bpmnElement="lk2"><dc:Bounds x="1698" y="97" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_0_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_0"><di:waypoint x="150" y="360"/><di:waypoint x="204" y="360"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_1_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_1"><di:waypoint x="324" y="360"/><di:waypoint x="330" y="360"/><di:waypoint x="330" y="590"/><di:waypoint x="336" y="590"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_2_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_2"><di:waypoint x="456" y="590"/><di:waypoint x="462" y="590"/><di:waypoint x="462" y="755"/><di:waypoint x="468" y="755"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_3_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_3"><di:waypoint x="588" y="755"/><di:waypoint x="594" y="755"/><di:waypoint x="594" y="590"/><di:waypoint x="600" y="590"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_4_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_4"><di:waypoint x="720" y="590"/><di:waypoint x="732" y="590"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_5_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_5"><di:waypoint x="852" y="590"/><di:waypoint x="882" y="590"/><di:waypoint x="882" y="360"/><di:waypoint x="898" y="360"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_6_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_6"><di:waypoint x="234" y="416"/><di:waypoint x="234" y="440"/><di:waypoint x="336" y="440"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_7_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_7"><di:waypoint x="456" y="440"/><di:waypoint x="486" y="440"/><di:waypoint x="486" y="165"/><di:waypoint x="502" y="165"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_8_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_8"><di:waypoint x="554" y="165"/><di:waypoint x="600" y="165"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_9_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_9"><di:waypoint x="720" y="165"/><di:waypoint x="774" y="165"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_10_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_10"><di:waypoint x="528" y="191"/><di:waypoint x="528" y="425"/><di:waypoint x="996" y="425"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_11_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_11"><di:waypoint x="924" y="334"/><di:waypoint x="924" y="295"/><di:waypoint x="996" y="295"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_12_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_12"><di:waypoint x="924" y="386"/><di:waypoint x="924" y="425"/><di:waypoint x="996" y="425"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_13_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_13"><di:waypoint x="1116" y="295"/><di:waypoint x="1168" y="295"/><di:waypoint x="1168" y="65"/><di:waypoint x="1260" y="65"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_14_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_14"><di:waypoint x="1116" y="425"/><di:waypoint x="1208" y="425"/><di:waypoint x="1208" y="165"/><di:waypoint x="1260" y="165"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_15_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_15"><di:waypoint x="1380" y="65"/><di:waypoint x="1410" y="65"/><di:waypoint x="1410" y="115"/><di:waypoint x="1426" y="115"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_16_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_16"><di:waypoint x="1380" y="165"/><di:waypoint x="1410" y="165"/><di:waypoint x="1410" y="115"/><di:waypoint x="1426" y="115"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_17_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_17"><di:waypoint x="1478" y="115"/><di:waypoint x="1524" y="115"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_ASIS_01B_Identificacao_Especie_18_di" bpmnElement="Flow_ASIS_01B_Identificacao_Especie_18"><di:waypoint x="1644" y="115"/><di:waypoint x="1698" y="115"/></bpmndi:BPMNEdge>
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn:definitions>
